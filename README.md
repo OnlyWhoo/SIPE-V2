@@ -19,6 +19,41 @@ Si la cuenta MySQL no puede crear bases, pide al administrador que autorice la c
 
 Esta es una **edición DEMO local**, bloqueada para acceso remoto y proxies. No contiene información real. Las credenciales conocidas deben cambiarse o deshabilitarse antes de cualquier uso real; esta distribución no se habilita como aplicación pública cambiando una opción. Un uso real requiere revisión de despliegue y cuentas propias. Los demás usuarios siguen sujetos a contraseñas de al menos 15 caracteres y hasta 72 bytes.
 
+## Cómo descargar y descomprimir
+
+Repositorio: [OnlyWhoo/SIPE-V2](https://github.com/OnlyWhoo/SIPE-V2). Es privado: para descargar desde GitHub necesitas una cuenta con acceso; también puedes recibir directamente el ZIP de entrega.
+
+**Si recibiste SIPE-V2-ENTREGA-FINAL.zip:** haz clic derecho sobre el archivo y selecciona **Extraer todo**. Abre la carpeta extraída y localiza **SIPE-V2**. Copia esa carpeta completa dentro de htdocs; no copies únicamente sus archivos sueltos.
+
+**Si descargas desde GitHub:** pulsa el botón verde **Code → Download ZIP** y extrae el archivo. GitHub normalmente crea una carpeta llamada **SIPE-V2-main**. Renombra esa carpeta a **SIPE-V2** y cópiala dentro de htdocs. No necesitas Git para ejecutarla.
+
+La carpeta que copies debe contener directamente `index.php`, `README.md`, `app`, `assets`, `database` y `vendor`. Comprueba esta estructura, adaptando la ubicación de XAMPP a tu computador:
+
+```text
+htdocs/
+└── SIPE-V2/
+    ├── index.php
+    ├── README.md
+    ├── app/
+    ├── assets/
+    ├── config/
+    ├── database/
+    ├── public/
+    └── vendor/
+```
+
+Evita una carpeta duplicada como `htdocs/SIPE-V2/SIPE-V2/index.php`: la entrada debe quedar en `htdocs/SIPE-V2/index.php`. Conserva también el archivo `.htaccess` incluido; contiene la protección de los archivos internos.
+
+No abras index.php con doble clic ni mediante una dirección file://. Inicia Apache y MySQL en XAMPP y utiliza el navegador con **http://localhost/SIPE-V2/**.
+
+## Qué ocurre al abrirlo por primera vez
+
+La aplicación comprueba los requisitos y la protección de Apache. Después intenta preparar una base nueva independiente con sus tablas, datos ficticios y cuenta DEMO. Al terminar muestra el inicio de sesión. En accesos posteriores conserva tus registros y no vuelve a instalar.
+
+Si aparece **Preparar SIPE V2**, indica el usuario y contraseña de TU servidor MySQL, su puerto y una base nueva. Estos datos son distintos de las credenciales DEMO de acceso a la aplicación. Pulsa **Preparar y continuar** y espera a que aparezca el login. No necesitas entrar a phpMyAdmin.
+
+Para comenzar la evaluación, entra con la cuenta DEMO, abre **Solicitud de Recursos**, identifica `DEMO-001` y selecciona un recurso disponible como `DEMO-TAB-01`. Puedes reservarlo para una fecha futura o realizar un préstamo externo con fecha de devolución. Luego consulta el movimiento para generar el vale o registrar la devolución. Los reportes y la auditoría permiten revisar las operaciones realizadas.
+
 ## Objetivo y tecnologías
 
 SIPE V2 — Sistema Independiente de Préstamos Estudiantiles permite evaluar el préstamo institucional de recursos. Conserva la interfaz aprobada y la arquitectura PHP del proyecto original: controladores, servicios, modelos, vistas, HTML5, CSS3, JavaScript, PDO e InnoDB. No añade frameworks ni servidores portables.
