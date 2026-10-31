@@ -1,0 +1,14 @@
+SIPE V2 — CÓMO EJECUTAR
+
+1. Descomprime el ZIP.
+2. Copia la carpeta SIPE-V2 dentro de htdocs de tu XAMPP.
+3. Abre el panel de XAMPP e inicia Apache y MySQL.
+4. Abre http://localhost/SIPE-V2/ en este computador.
+5. La base nueva y sus datos DEMO se preparan automáticamente.
+6. Si aparece el asistente, indica la conexión MySQL autorizada de tu servidor.
+7. Inicia sesión:
+
+Correo: profesor@sipe.local
+Contraseña: Sipe2026!
+
+No importes SQL ni instales programas. Si Apache usa otro puerto, inclúyelo en la URL.

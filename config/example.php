@@ -1,0 +1,1 @@
+<?php return ['dsn'=>'mysql:host=127.0.0.1;port=3306;dbname=sipe_v2;charset=utf8mb4','user'=>'','password'=>'','base_path'=>str_replace('\\','/',dirname($_SERVER['SCRIPT_NAME']??'/SIPE-V2/index.php')),'secure_cookie'=>!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off','session_timeout'=>1800,'demo_local'=>true];

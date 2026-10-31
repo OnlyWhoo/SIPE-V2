@@ -1,0 +1,9 @@
+/var/*
+!/var/.gitkeep
+/dist/
+/config/*.local.php
+/config/local.php
+/.tools/
+*.log
+*.pid
+.env*

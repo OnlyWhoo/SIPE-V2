@@ -1,0 +1,8 @@
+Options -Indexes
+DirectoryIndex index.php
+RewriteEngine On
+RewriteRule ^(?:app|config|database|var|vendor|docs|public|tests|dist|scripts)(?:/|$) - [F,L,NC]
+RewriteRule (^|/)\. - [F,L]
+<FilesMatch "(?i)\.(?:sql|log|lock|json|md|bak|ini|env|txt|zip|py|ps1|mjs)$">
+Require all denied
+</FilesMatch>

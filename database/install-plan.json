@@ -1,0 +1,1845 @@
+{
+    "version": "2.0.0",
+    "migrations": [
+        "001_active_loan",
+        "002_workflow"
+    ],
+    "tables": {
+        "roles": {
+            "sql": "CREATE TABLE `roles` (\n  `id` tinyint(3) unsigned NOT NULL AUTO_INCREMENT,\n  `nombre` varchar(40) NOT NULL,\n  `descripcion` varchar(255) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `nombre` (`nombre`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "signature": {
+                "engine": "innodb",
+                "columns": [
+                    [
+                        "id",
+                        "tinyint unsigned",
+                        "NO",
+                        null,
+                        "auto_increment",
+                        null
+                    ],
+                    [
+                        "nombre",
+                        "varchar(40)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "descripcion",
+                        "varchar(255)",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ]
+                ],
+                "indexes": {
+                    "PRIMARY": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "id",
+                                null
+                            ]
+                        ]
+                    },
+                    "nombre": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "nombre",
+                                null
+                            ]
+                        ]
+                    }
+                },
+                "foreign": [],
+                "checks": []
+            }
+        },
+        "usuarios": {
+            "sql": "CREATE TABLE `usuarios` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `rol_id` tinyint(3) unsigned NOT NULL,\n  `nombre_completo` varchar(150) NOT NULL,\n  `correo` varchar(180) NOT NULL,\n  `password_hash` varchar(255) NOT NULL,\n  `activo` tinyint(1) NOT NULL DEFAULT 1,\n  `ultimo_acceso` datetime DEFAULT NULL,\n  `creado_en` datetime NOT NULL DEFAULT current_timestamp(),\n  `actualizado_en` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `correo` (`correo`),\n  KEY `rol_id` (`rol_id`),\n  CONSTRAINT `usuarios_ibfk_1` FOREIGN KEY (`rol_id`) REFERENCES `roles` (`id`),\n  CONSTRAINT `usuarios_check_1` CHECK (`activo` in (0,1))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "signature": {
+                "engine": "innodb",
+                "columns": [
+                    [
+                        "id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "auto_increment",
+                        null
+                    ],
+                    [
+                        "rol_id",
+                        "tinyint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "nombre_completo",
+                        "varchar(150)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "correo",
+                        "varchar(180)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "password_hash",
+                        "varchar(255)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "activo",
+                        "tinyint",
+                        "NO",
+                        "1",
+                        "",
+                        null
+                    ],
+                    [
+                        "ultimo_acceso",
+                        "datetime",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "creado_en",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "",
+                        null
+                    ],
+                    [
+                        "actualizado_en",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "on update current_timestamp()",
+                        null
+                    ]
+                ],
+                "indexes": {
+                    "PRIMARY": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "id",
+                                null
+                            ]
+                        ]
+                    },
+                    "correo": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "correo",
+                                null
+                            ]
+                        ]
+                    },
+                    "rol_id": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "rol_id",
+                                null
+                            ]
+                        ]
+                    }
+                },
+                "foreign": [
+                    [
+                        "usuarios_ibfk_1",
+                        "rol_id",
+                        true,
+                        "roles",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ]
+                ],
+                "checks": [
+                    "activoin0,1"
+                ]
+            }
+        },
+        "programas_academicos": {
+            "sql": "CREATE TABLE `programas_academicos` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `codigo` varchar(30) NOT NULL,\n  `nombre` varchar(150) NOT NULL,\n  `activo` tinyint(1) NOT NULL DEFAULT 1,\n  `creado_en` datetime NOT NULL DEFAULT current_timestamp(),\n  `actualizado_en` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `codigo` (`codigo`),\n  CONSTRAINT `programas_academicos_check_1` CHECK (`activo` in (0,1))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "signature": {
+                "engine": "innodb",
+                "columns": [
+                    [
+                        "id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "auto_increment",
+                        null
+                    ],
+                    [
+                        "codigo",
+                        "varchar(30)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "nombre",
+                        "varchar(150)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "activo",
+                        "tinyint",
+                        "NO",
+                        "1",
+                        "",
+                        null
+                    ],
+                    [
+                        "creado_en",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "",
+                        null
+                    ],
+                    [
+                        "actualizado_en",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "on update current_timestamp()",
+                        null
+                    ]
+                ],
+                "indexes": {
+                    "PRIMARY": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "id",
+                                null
+                            ]
+                        ]
+                    },
+                    "codigo": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "codigo",
+                                null
+                            ]
+                        ]
+                    }
+                },
+                "foreign": [],
+                "checks": [
+                    "activoin0,1"
+                ]
+            }
+        },
+        "estudiantes": {
+            "sql": "CREATE TABLE `estudiantes` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `codigo_estudiante` varchar(40) NOT NULL,\n  `programa_id` bigint(20) unsigned DEFAULT NULL,\n  `nombres` varchar(100) NOT NULL,\n  `apellidos` varchar(100) NOT NULL,\n  `correo` varchar(180) DEFAULT NULL,\n  `qr_token` char(64) NOT NULL,\n  `activo` tinyint(1) NOT NULL DEFAULT 1,\n  `creado_en` datetime NOT NULL DEFAULT current_timestamp(),\n  `actualizado_en` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `tipo_persona` enum('ESTUDIANTE','EGRESADO','ADMINISTRATIVO') NOT NULL DEFAULT 'ESTUDIANTE',\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `codigo_estudiante` (`codigo_estudiante`),\n  UNIQUE KEY `qr_token` (`qr_token`),\n  UNIQUE KEY `correo` (`correo`),\n  KEY `programa_id` (`programa_id`),\n  CONSTRAINT `estudiantes_ibfk_1` FOREIGN KEY (`programa_id`) REFERENCES `programas_academicos` (`id`),\n  CONSTRAINT `estudiantes_check_1` CHECK (`activo` in (0,1))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "signature": {
+                "engine": "innodb",
+                "columns": [
+                    [
+                        "id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "auto_increment",
+                        null
+                    ],
+                    [
+                        "codigo_estudiante",
+                        "varchar(40)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "programa_id",
+                        "bigint unsigned",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "nombres",
+                        "varchar(100)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "apellidos",
+                        "varchar(100)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "correo",
+                        "varchar(180)",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "qr_token",
+                        "char(64)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "activo",
+                        "tinyint",
+                        "NO",
+                        "1",
+                        "",
+                        null
+                    ],
+                    [
+                        "creado_en",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "",
+                        null
+                    ],
+                    [
+                        "actualizado_en",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "on update current_timestamp()",
+                        null
+                    ],
+                    [
+                        "tipo_persona",
+                        "enum('estudiante','egresado','administrativo')",
+                        "NO",
+                        "estudiante",
+                        "",
+                        null
+                    ]
+                ],
+                "indexes": {
+                    "PRIMARY": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "id",
+                                null
+                            ]
+                        ]
+                    },
+                    "codigo_estudiante": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "codigo_estudiante",
+                                null
+                            ]
+                        ]
+                    },
+                    "correo": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "correo",
+                                null
+                            ]
+                        ]
+                    },
+                    "programa_id": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "programa_id",
+                                null
+                            ]
+                        ]
+                    },
+                    "qr_token": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "qr_token",
+                                null
+                            ]
+                        ]
+                    }
+                },
+                "foreign": [
+                    [
+                        "estudiantes_ibfk_1",
+                        "programa_id",
+                        true,
+                        "programas_academicos",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ]
+                ],
+                "checks": [
+                    "activoin0,1"
+                ]
+            }
+        },
+        "categorias_recursos": {
+            "sql": "CREATE TABLE `categorias_recursos` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `nombre` varchar(100) NOT NULL,\n  `descripcion` text DEFAULT NULL,\n  `activo` tinyint(1) NOT NULL DEFAULT 1,\n  `creado_en` datetime NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `nombre` (`nombre`),\n  CONSTRAINT `categorias_recursos_check_1` CHECK (`activo` in (0,1))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "signature": {
+                "engine": "innodb",
+                "columns": [
+                    [
+                        "id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "auto_increment",
+                        null
+                    ],
+                    [
+                        "nombre",
+                        "varchar(100)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "descripcion",
+                        "text",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "activo",
+                        "tinyint",
+                        "NO",
+                        "1",
+                        "",
+                        null
+                    ],
+                    [
+                        "creado_en",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "",
+                        null
+                    ]
+                ],
+                "indexes": {
+                    "PRIMARY": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "id",
+                                null
+                            ]
+                        ]
+                    },
+                    "nombre": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "nombre",
+                                null
+                            ]
+                        ]
+                    }
+                },
+                "foreign": [],
+                "checks": [
+                    "activoin0,1"
+                ]
+            }
+        },
+        "recursos": {
+            "sql": "CREATE TABLE `recursos` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `categoria_id` bigint(20) unsigned NOT NULL,\n  `codigo_inventario` varchar(50) NOT NULL,\n  `nombre` varchar(150) NOT NULL,\n  `descripcion` text DEFAULT NULL,\n  `estado_fisico` enum('BUENO','REGULAR','DANADO') NOT NULL DEFAULT 'BUENO',\n  `estado_operativo` enum('DISPONIBLE','PRESTADO','MANTENIMIENTO','BAJA') NOT NULL DEFAULT 'DISPONIBLE',\n  `activo` tinyint(1) NOT NULL DEFAULT 1,\n  `creado_en` datetime NOT NULL DEFAULT current_timestamp(),\n  `actualizado_en` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `codigo_inventario` (`codigo_inventario`),\n  KEY `categoria_id` (`categoria_id`),\n  KEY `idx_recursos_estado` (`estado_operativo`,`activo`),\n  CONSTRAINT `recursos_ibfk_1` FOREIGN KEY (`categoria_id`) REFERENCES `categorias_recursos` (`id`),\n  CONSTRAINT `recursos_check_1` CHECK (`activo` in (0,1))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "signature": {
+                "engine": "innodb",
+                "columns": [
+                    [
+                        "id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "auto_increment",
+                        null
+                    ],
+                    [
+                        "categoria_id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "codigo_inventario",
+                        "varchar(50)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "nombre",
+                        "varchar(150)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "descripcion",
+                        "text",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "estado_fisico",
+                        "enum('bueno','regular','danado')",
+                        "NO",
+                        "bueno",
+                        "",
+                        null
+                    ],
+                    [
+                        "estado_operativo",
+                        "enum('disponible','prestado','mantenimiento','baja')",
+                        "NO",
+                        "disponible",
+                        "",
+                        null
+                    ],
+                    [
+                        "activo",
+                        "tinyint",
+                        "NO",
+                        "1",
+                        "",
+                        null
+                    ],
+                    [
+                        "creado_en",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "",
+                        null
+                    ],
+                    [
+                        "actualizado_en",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "on update current_timestamp()",
+                        null
+                    ]
+                ],
+                "indexes": {
+                    "PRIMARY": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "id",
+                                null
+                            ]
+                        ]
+                    },
+                    "categoria_id": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "categoria_id",
+                                null
+                            ]
+                        ]
+                    },
+                    "codigo_inventario": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "codigo_inventario",
+                                null
+                            ]
+                        ]
+                    },
+                    "idx_recursos_estado": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "estado_operativo",
+                                null
+                            ],
+                            [
+                                "activo",
+                                null
+                            ]
+                        ]
+                    }
+                },
+                "foreign": [
+                    [
+                        "recursos_ibfk_1",
+                        "categoria_id",
+                        true,
+                        "categorias_recursos",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ]
+                ],
+                "checks": [
+                    "activoin0,1"
+                ]
+            }
+        },
+        "autorizaciones_programa_categoria": {
+            "sql": "CREATE TABLE `autorizaciones_programa_categoria` (\n  `programa_id` bigint(20) unsigned NOT NULL,\n  `categoria_id` bigint(20) unsigned NOT NULL,\n  `autorizado_por` bigint(20) unsigned DEFAULT NULL,\n  `creado_en` datetime NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`programa_id`,`categoria_id`),\n  KEY `categoria_id` (`categoria_id`),\n  KEY `autorizado_por` (`autorizado_por`),\n  CONSTRAINT `autorizaciones_programa_categoria_ibfk_1` FOREIGN KEY (`programa_id`) REFERENCES `programas_academicos` (`id`),\n  CONSTRAINT `autorizaciones_programa_categoria_ibfk_2` FOREIGN KEY (`categoria_id`) REFERENCES `categorias_recursos` (`id`),\n  CONSTRAINT `autorizaciones_programa_categoria_ibfk_3` FOREIGN KEY (`autorizado_por`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "signature": {
+                "engine": "innodb",
+                "columns": [
+                    [
+                        "programa_id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "categoria_id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "autorizado_por",
+                        "bigint unsigned",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "creado_en",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "",
+                        null
+                    ]
+                ],
+                "indexes": {
+                    "PRIMARY": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "programa_id",
+                                null
+                            ],
+                            [
+                                "categoria_id",
+                                null
+                            ]
+                        ]
+                    },
+                    "autorizado_por": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "autorizado_por",
+                                null
+                            ]
+                        ]
+                    },
+                    "categoria_id": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "categoria_id",
+                                null
+                            ]
+                        ]
+                    }
+                },
+                "foreign": [
+                    [
+                        "autorizaciones_programa_categoria_ibfk_1",
+                        "programa_id",
+                        true,
+                        "programas_academicos",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ],
+                    [
+                        "autorizaciones_programa_categoria_ibfk_2",
+                        "categoria_id",
+                        true,
+                        "categorias_recursos",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ],
+                    [
+                        "autorizaciones_programa_categoria_ibfk_3",
+                        "autorizado_por",
+                        true,
+                        "usuarios",
+                        "id",
+                        "RESTRICT",
+                        "SET NULL"
+                    ]
+                ],
+                "checks": []
+            }
+        },
+        "reservas": {
+            "sql": "CREATE TABLE `reservas` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `estudiante_id` bigint(20) unsigned NOT NULL,\n  `recurso_id` bigint(20) unsigned NOT NULL,\n  `creada_por` bigint(20) unsigned NOT NULL,\n  `inicio` datetime NOT NULL,\n  `fin` datetime NOT NULL,\n  `estado` enum('CONFIRMADA','CANCELADA','ATENDIDA','VENCIDA','PENDIENTE_APROBACION') NOT NULL DEFAULT 'CONFIRMADA',\n  `observaciones` text DEFAULT NULL,\n  `creada_en` datetime NOT NULL DEFAULT current_timestamp(),\n  `actualizada_en` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `tipo_prestamo` enum('INTERNO','EXTERNO') DEFAULT NULL,\n  `grupo_trabajo` varchar(100) DEFAULT NULL,\n  `aprobado_por` bigint(20) unsigned DEFAULT NULL,\n  `motivo_aprobacion` text DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `estudiante_id` (`estudiante_id`),\n  KEY `creada_por` (`creada_por`),\n  KEY `idx_reservas_solapamiento` (`recurso_id`,`estado`,`inicio`,`fin`),\n  KEY `fk_reserva_aprobador` (`aprobado_por`),\n  CONSTRAINT `fk_reserva_aprobador` FOREIGN KEY (`aprobado_por`) REFERENCES `usuarios` (`id`),\n  CONSTRAINT `reservas_ibfk_1` FOREIGN KEY (`estudiante_id`) REFERENCES `estudiantes` (`id`),\n  CONSTRAINT `reservas_ibfk_2` FOREIGN KEY (`recurso_id`) REFERENCES `recursos` (`id`),\n  CONSTRAINT `reservas_ibfk_3` FOREIGN KEY (`creada_por`) REFERENCES `usuarios` (`id`),\n  CONSTRAINT `reservas_check_1` CHECK (`fin` > `inicio`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "signature": {
+                "engine": "innodb",
+                "columns": [
+                    [
+                        "id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "auto_increment",
+                        null
+                    ],
+                    [
+                        "estudiante_id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "recurso_id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "creada_por",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "inicio",
+                        "datetime",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "fin",
+                        "datetime",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "estado",
+                        "enum('confirmada','cancelada','atendida','vencida','pendiente_aprobacion')",
+                        "NO",
+                        "confirmada",
+                        "",
+                        null
+                    ],
+                    [
+                        "observaciones",
+                        "text",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "creada_en",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "",
+                        null
+                    ],
+                    [
+                        "actualizada_en",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "on update current_timestamp()",
+                        null
+                    ],
+                    [
+                        "tipo_prestamo",
+                        "enum('interno','externo')",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "grupo_trabajo",
+                        "varchar(100)",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "aprobado_por",
+                        "bigint unsigned",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "motivo_aprobacion",
+                        "text",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ]
+                ],
+                "indexes": {
+                    "PRIMARY": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "id",
+                                null
+                            ]
+                        ]
+                    },
+                    "creada_por": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "creada_por",
+                                null
+                            ]
+                        ]
+                    },
+                    "estudiante_id": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "estudiante_id",
+                                null
+                            ]
+                        ]
+                    },
+                    "fk_reserva_aprobador": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "aprobado_por",
+                                null
+                            ]
+                        ]
+                    },
+                    "idx_reservas_solapamiento": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "recurso_id",
+                                null
+                            ],
+                            [
+                                "estado",
+                                null
+                            ],
+                            [
+                                "inicio",
+                                null
+                            ],
+                            [
+                                "fin",
+                                null
+                            ]
+                        ]
+                    }
+                },
+                "foreign": [
+                    [
+                        "fk_reserva_aprobador",
+                        "aprobado_por",
+                        true,
+                        "usuarios",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ],
+                    [
+                        "reservas_ibfk_1",
+                        "estudiante_id",
+                        true,
+                        "estudiantes",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ],
+                    [
+                        "reservas_ibfk_2",
+                        "recurso_id",
+                        true,
+                        "recursos",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ],
+                    [
+                        "reservas_ibfk_3",
+                        "creada_por",
+                        true,
+                        "usuarios",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ]
+                ],
+                "checks": [
+                    "fin>inicio"
+                ]
+            }
+        },
+        "prestamos": {
+            "sql": "CREATE TABLE `prestamos` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `estudiante_id` bigint(20) unsigned NOT NULL,\n  `recurso_id` bigint(20) unsigned NOT NULL,\n  `reserva_id` bigint(20) unsigned DEFAULT NULL,\n  `entregado_por` bigint(20) unsigned NOT NULL,\n  `fecha_entrega` datetime NOT NULL DEFAULT current_timestamp(),\n  `fecha_limite` datetime NOT NULL,\n  `estado` enum('ACTIVO','DEVUELTO','ANULADO') NOT NULL DEFAULT 'ACTIVO',\n  `observaciones_entrega` text DEFAULT NULL,\n  `creado_en` datetime NOT NULL DEFAULT current_timestamp(),\n  `recurso_activo_id` bigint(20) unsigned GENERATED ALWAYS AS (case when `estado` = 'ACTIVO' then `recurso_id` else NULL end) STORED,\n  `tipo_prestamo` enum('INTERNO','EXTERNO') DEFAULT NULL,\n  `grupo_trabajo` varchar(100) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_prestamos_reserva` (`reserva_id`),\n  UNIQUE KEY `uq_recurso_prestamo_activo` (`recurso_activo_id`),\n  KEY `entregado_por` (`entregado_por`),\n  KEY `idx_prestamos_recurso_estado` (`recurso_id`,`estado`),\n  KEY `idx_prestamos_estudiante` (`estudiante_id`,`estado`),\n  CONSTRAINT `prestamos_ibfk_1` FOREIGN KEY (`estudiante_id`) REFERENCES `estudiantes` (`id`),\n  CONSTRAINT `prestamos_ibfk_2` FOREIGN KEY (`recurso_id`) REFERENCES `recursos` (`id`),\n  CONSTRAINT `prestamos_ibfk_3` FOREIGN KEY (`reserva_id`) REFERENCES `reservas` (`id`),\n  CONSTRAINT `prestamos_ibfk_4` FOREIGN KEY (`entregado_por`) REFERENCES `usuarios` (`id`),\n  CONSTRAINT `prestamos_check_1` CHECK (`fecha_limite` > `fecha_entrega`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "signature": {
+                "engine": "innodb",
+                "columns": [
+                    [
+                        "id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "auto_increment",
+                        null
+                    ],
+                    [
+                        "estudiante_id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "recurso_id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "reserva_id",
+                        "bigint unsigned",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "entregado_por",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "fecha_entrega",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "",
+                        null
+                    ],
+                    [
+                        "fecha_limite",
+                        "datetime",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "estado",
+                        "enum('activo','devuelto','anulado')",
+                        "NO",
+                        "activo",
+                        "",
+                        null
+                    ],
+                    [
+                        "observaciones_entrega",
+                        "text",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "creado_en",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "",
+                        null
+                    ],
+                    [
+                        "recurso_activo_id",
+                        "bigint unsigned",
+                        "YES",
+                        null,
+                        "stored generated",
+                        "casewhenestado='activo'thenrecurso_idelsenullend"
+                    ],
+                    [
+                        "tipo_prestamo",
+                        "enum('interno','externo')",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "grupo_trabajo",
+                        "varchar(100)",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ]
+                ],
+                "indexes": {
+                    "PRIMARY": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "id",
+                                null
+                            ]
+                        ]
+                    },
+                    "entregado_por": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "entregado_por",
+                                null
+                            ]
+                        ]
+                    },
+                    "idx_prestamos_estudiante": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "estudiante_id",
+                                null
+                            ],
+                            [
+                                "estado",
+                                null
+                            ]
+                        ]
+                    },
+                    "idx_prestamos_recurso_estado": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "recurso_id",
+                                null
+                            ],
+                            [
+                                "estado",
+                                null
+                            ]
+                        ]
+                    },
+                    "uq_prestamos_reserva": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "reserva_id",
+                                null
+                            ]
+                        ]
+                    },
+                    "uq_recurso_prestamo_activo": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "recurso_activo_id",
+                                null
+                            ]
+                        ]
+                    }
+                },
+                "foreign": [
+                    [
+                        "prestamos_ibfk_1",
+                        "estudiante_id",
+                        true,
+                        "estudiantes",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ],
+                    [
+                        "prestamos_ibfk_2",
+                        "recurso_id",
+                        true,
+                        "recursos",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ],
+                    [
+                        "prestamos_ibfk_3",
+                        "reserva_id",
+                        true,
+                        "reservas",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ],
+                    [
+                        "prestamos_ibfk_4",
+                        "entregado_por",
+                        true,
+                        "usuarios",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ]
+                ],
+                "checks": [
+                    "fecha_limite>fecha_entrega"
+                ]
+            }
+        },
+        "devoluciones": {
+            "sql": "CREATE TABLE `devoluciones` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `prestamo_id` bigint(20) unsigned NOT NULL,\n  `recibido_por` bigint(20) unsigned NOT NULL,\n  `fecha_devolucion` datetime NOT NULL DEFAULT current_timestamp(),\n  `estado_retorno` enum('BUENO','REGULAR','DANADO') NOT NULL,\n  `observaciones` text DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `prestamo_id` (`prestamo_id`),\n  KEY `recibido_por` (`recibido_por`),\n  CONSTRAINT `devoluciones_ibfk_1` FOREIGN KEY (`prestamo_id`) REFERENCES `prestamos` (`id`),\n  CONSTRAINT `devoluciones_ibfk_2` FOREIGN KEY (`recibido_por`) REFERENCES `usuarios` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "signature": {
+                "engine": "innodb",
+                "columns": [
+                    [
+                        "id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "auto_increment",
+                        null
+                    ],
+                    [
+                        "prestamo_id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "recibido_por",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "fecha_devolucion",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "",
+                        null
+                    ],
+                    [
+                        "estado_retorno",
+                        "enum('bueno','regular','danado')",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "observaciones",
+                        "text",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ]
+                ],
+                "indexes": {
+                    "PRIMARY": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "id",
+                                null
+                            ]
+                        ]
+                    },
+                    "prestamo_id": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "prestamo_id",
+                                null
+                            ]
+                        ]
+                    },
+                    "recibido_por": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "recibido_por",
+                                null
+                            ]
+                        ]
+                    }
+                },
+                "foreign": [
+                    [
+                        "devoluciones_ibfk_1",
+                        "prestamo_id",
+                        true,
+                        "prestamos",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ],
+                    [
+                        "devoluciones_ibfk_2",
+                        "recibido_por",
+                        true,
+                        "usuarios",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ]
+                ],
+                "checks": []
+            }
+        },
+        "inspecciones": {
+            "sql": "CREATE TABLE `inspecciones` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `recurso_id` bigint(20) unsigned NOT NULL,\n  `prestamo_id` bigint(20) unsigned DEFAULT NULL,\n  `inspeccionado_por` bigint(20) unsigned NOT NULL,\n  `momento` enum('ANTES_ENTREGA','EN_DEVOLUCION','PERIODICA') NOT NULL,\n  `estado_fisico` enum('BUENO','REGULAR','DANADO') NOT NULL,\n  `apto_para_prestamo` tinyint(1) NOT NULL,\n  `observaciones` text DEFAULT NULL,\n  `fecha_inspeccion` datetime NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `recurso_id` (`recurso_id`),\n  KEY `prestamo_id` (`prestamo_id`),\n  KEY `inspeccionado_por` (`inspeccionado_por`),\n  CONSTRAINT `inspecciones_ibfk_1` FOREIGN KEY (`recurso_id`) REFERENCES `recursos` (`id`),\n  CONSTRAINT `inspecciones_ibfk_2` FOREIGN KEY (`prestamo_id`) REFERENCES `prestamos` (`id`),\n  CONSTRAINT `inspecciones_ibfk_3` FOREIGN KEY (`inspeccionado_por`) REFERENCES `usuarios` (`id`),\n  CONSTRAINT `inspecciones_check_1` CHECK (`apto_para_prestamo` in (0,1))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "signature": {
+                "engine": "innodb",
+                "columns": [
+                    [
+                        "id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "auto_increment",
+                        null
+                    ],
+                    [
+                        "recurso_id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "prestamo_id",
+                        "bigint unsigned",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "inspeccionado_por",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "momento",
+                        "enum('antes_entrega','en_devolucion','periodica')",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "estado_fisico",
+                        "enum('bueno','regular','danado')",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "apto_para_prestamo",
+                        "tinyint",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "observaciones",
+                        "text",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "fecha_inspeccion",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "",
+                        null
+                    ]
+                ],
+                "indexes": {
+                    "PRIMARY": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "id",
+                                null
+                            ]
+                        ]
+                    },
+                    "inspeccionado_por": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "inspeccionado_por",
+                                null
+                            ]
+                        ]
+                    },
+                    "prestamo_id": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "prestamo_id",
+                                null
+                            ]
+                        ]
+                    },
+                    "recurso_id": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "recurso_id",
+                                null
+                            ]
+                        ]
+                    }
+                },
+                "foreign": [
+                    [
+                        "inspecciones_ibfk_1",
+                        "recurso_id",
+                        true,
+                        "recursos",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ],
+                    [
+                        "inspecciones_ibfk_2",
+                        "prestamo_id",
+                        true,
+                        "prestamos",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ],
+                    [
+                        "inspecciones_ibfk_3",
+                        "inspeccionado_por",
+                        true,
+                        "usuarios",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ]
+                ],
+                "checks": [
+                    "apto_para_prestamoin0,1"
+                ]
+            }
+        },
+        "sanciones": {
+            "sql": "CREATE TABLE `sanciones` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `estudiante_id` bigint(20) unsigned NOT NULL,\n  `prestamo_id` bigint(20) unsigned DEFAULT NULL,\n  `registrada_por` bigint(20) unsigned NOT NULL,\n  `tipo` enum('MORA','DANIO','OTRA') NOT NULL,\n  `motivo` text NOT NULL,\n  `monto` decimal(12,2) DEFAULT NULL,\n  `estado` enum('ABIERTA','RESUELTA','ANULADA') NOT NULL DEFAULT 'ABIERTA',\n  `fecha_registro` datetime NOT NULL DEFAULT current_timestamp(),\n  `fecha_resolucion` datetime DEFAULT NULL,\n  `observaciones_resolucion` text DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `estudiante_id` (`estudiante_id`),\n  KEY `prestamo_id` (`prestamo_id`),\n  KEY `registrada_por` (`registrada_por`),\n  CONSTRAINT `sanciones_ibfk_1` FOREIGN KEY (`estudiante_id`) REFERENCES `estudiantes` (`id`),\n  CONSTRAINT `sanciones_ibfk_2` FOREIGN KEY (`prestamo_id`) REFERENCES `prestamos` (`id`),\n  CONSTRAINT `sanciones_ibfk_3` FOREIGN KEY (`registrada_por`) REFERENCES `usuarios` (`id`),\n  CONSTRAINT `sanciones_check_1` CHECK (`monto` is null or `monto` >= 0)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "signature": {
+                "engine": "innodb",
+                "columns": [
+                    [
+                        "id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "auto_increment",
+                        null
+                    ],
+                    [
+                        "estudiante_id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "prestamo_id",
+                        "bigint unsigned",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "registrada_por",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "tipo",
+                        "enum('mora','danio','otra')",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "motivo",
+                        "text",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "monto",
+                        "decimal(12,2)",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "estado",
+                        "enum('abierta','resuelta','anulada')",
+                        "NO",
+                        "abierta",
+                        "",
+                        null
+                    ],
+                    [
+                        "fecha_registro",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "",
+                        null
+                    ],
+                    [
+                        "fecha_resolucion",
+                        "datetime",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "observaciones_resolucion",
+                        "text",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ]
+                ],
+                "indexes": {
+                    "PRIMARY": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "id",
+                                null
+                            ]
+                        ]
+                    },
+                    "estudiante_id": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "estudiante_id",
+                                null
+                            ]
+                        ]
+                    },
+                    "prestamo_id": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "prestamo_id",
+                                null
+                            ]
+                        ]
+                    },
+                    "registrada_por": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "registrada_por",
+                                null
+                            ]
+                        ]
+                    }
+                },
+                "foreign": [
+                    [
+                        "sanciones_ibfk_1",
+                        "estudiante_id",
+                        true,
+                        "estudiantes",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ],
+                    [
+                        "sanciones_ibfk_2",
+                        "prestamo_id",
+                        true,
+                        "prestamos",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ],
+                    [
+                        "sanciones_ibfk_3",
+                        "registrada_por",
+                        true,
+                        "usuarios",
+                        "id",
+                        "RESTRICT",
+                        "RESTRICT"
+                    ]
+                ],
+                "checks": [
+                    "montoisnullormonto>=0"
+                ]
+            }
+        },
+        "auditoria": {
+            "sql": "CREATE TABLE `auditoria` (\n  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,\n  `usuario_id` bigint(20) unsigned DEFAULT NULL,\n  `accion` varchar(100) NOT NULL,\n  `entidad` varchar(80) NOT NULL,\n  `entidad_id` bigint(20) unsigned DEFAULT NULL,\n  `detalle` text DEFAULT NULL,\n  `datos_antes` longtext DEFAULT NULL,\n  `datos_despues` longtext DEFAULT NULL,\n  `ip_origen` varchar(45) DEFAULT NULL,\n  `fecha_evento` datetime NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `usuario_id` (`usuario_id`),\n  KEY `idx_auditoria_fecha` (`fecha_evento`),\n  KEY `idx_auditoria_entidad` (`entidad`,`entidad_id`),\n  KEY `idx_auditoria_acceso` (`accion`,`ip_origen`,`fecha_evento`),\n  CONSTRAINT `auditoria_ibfk_1` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "signature": {
+                "engine": "innodb",
+                "columns": [
+                    [
+                        "id",
+                        "bigint unsigned",
+                        "NO",
+                        null,
+                        "auto_increment",
+                        null
+                    ],
+                    [
+                        "usuario_id",
+                        "bigint unsigned",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "accion",
+                        "varchar(100)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "entidad",
+                        "varchar(80)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "entidad_id",
+                        "bigint unsigned",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "detalle",
+                        "text",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "datos_antes",
+                        "longtext",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "datos_despues",
+                        "longtext",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "ip_origen",
+                        "varchar(45)",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "fecha_evento",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "",
+                        null
+                    ]
+                ],
+                "indexes": {
+                    "PRIMARY": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "id",
+                                null
+                            ]
+                        ]
+                    },
+                    "idx_auditoria_acceso": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "accion",
+                                null
+                            ],
+                            [
+                                "ip_origen",
+                                null
+                            ],
+                            [
+                                "fecha_evento",
+                                null
+                            ]
+                        ]
+                    },
+                    "idx_auditoria_entidad": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "entidad",
+                                null
+                            ],
+                            [
+                                "entidad_id",
+                                null
+                            ]
+                        ]
+                    },
+                    "idx_auditoria_fecha": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "fecha_evento",
+                                null
+                            ]
+                        ]
+                    },
+                    "usuario_id": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "usuario_id",
+                                null
+                            ]
+                        ]
+                    }
+                },
+                "foreign": [
+                    [
+                        "auditoria_ibfk_1",
+                        "usuario_id",
+                        true,
+                        "usuarios",
+                        "id",
+                        "RESTRICT",
+                        "SET NULL"
+                    ]
+                ],
+                "checks": []
+            }
+        },
+        "configuraciones": {
+            "sql": "CREATE TABLE `configuraciones` (\n  `clave` varchar(100) NOT NULL,\n  `valor` varchar(255) NOT NULL,\n  `descripcion` text DEFAULT NULL,\n  `actualizado_por` bigint(20) unsigned DEFAULT NULL,\n  `actualizado_en` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`clave`),\n  KEY `actualizado_por` (`actualizado_por`),\n  CONSTRAINT `configuraciones_ibfk_1` FOREIGN KEY (`actualizado_por`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            "signature": {
+                "engine": "innodb",
+                "columns": [
+                    [
+                        "clave",
+                        "varchar(100)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "valor",
+                        "varchar(255)",
+                        "NO",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "descripcion",
+                        "text",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "actualizado_por",
+                        "bigint unsigned",
+                        "YES",
+                        null,
+                        "",
+                        null
+                    ],
+                    [
+                        "actualizado_en",
+                        "datetime",
+                        "NO",
+                        "current_timestamp",
+                        "on update current_timestamp()",
+                        null
+                    ]
+                ],
+                "indexes": {
+                    "PRIMARY": {
+                        "unique": true,
+                        "columns": [
+                            [
+                                "clave",
+                                null
+                            ]
+                        ]
+                    },
+                    "actualizado_por": {
+                        "unique": false,
+                        "columns": [
+                            [
+                                "actualizado_por",
+                                null
+                            ]
+                        ]
+                    }
+                },
+                "foreign": [
+                    [
+                        "configuraciones_ibfk_1",
+                        "actualizado_por",
+                        true,
+                        "usuarios",
+                        "id",
+                        "RESTRICT",
+                        "SET NULL"
+                    ]
+                ],
+                "checks": []
+            }
+        }
+    },
+    "view": {
+        "name": "vw_prestamos_resumen",
+        "definition": "select `p`.`id` AS `prestamo_id`,`e`.`codigo_estudiante` AS `codigo_estudiante`,concat(`e`.`nombres`,' ',`e`.`apellidos`) AS `estudiante`,`r`.`codigo_inventario` AS `codigo_inventario`,`r`.`nombre` AS `recurso`,`p`.`fecha_entrega` AS `fecha_entrega`,`p`.`fecha_limite` AS `fecha_limite`,`d`.`fecha_devolucion` AS `fecha_devolucion`,case when `p`.`estado` = 'ANULADO' then 'ANULADO' when `d`.`id` is not null then 'DEVUELTO' when current_timestamp() > `p`.`fecha_limite` then 'ATRASADO' else 'ACTIVO' end AS `situacion` from (((`prestamos` `p` join `estudiantes` `e` on(`e`.`id` = `p`.`estudiante_id`)) join `recursos` `r` on(`r`.`id` = `p`.`recurso_id`)) left join `devoluciones` `d` on(`d`.`prestamo_id` = `p`.`id`))",
+        "sql": "CREATE SQL SECURITY INVOKER VIEW vw_prestamos_resumen AS select `p`.`id` AS `prestamo_id`,`e`.`codigo_estudiante` AS `codigo_estudiante`,concat(`e`.`nombres`,' ',`e`.`apellidos`) AS `estudiante`,`r`.`codigo_inventario` AS `codigo_inventario`,`r`.`nombre` AS `recurso`,`p`.`fecha_entrega` AS `fecha_entrega`,`p`.`fecha_limite` AS `fecha_limite`,`d`.`fecha_devolucion` AS `fecha_devolucion`,case when `p`.`estado` = 'ANULADO' then 'ANULADO' when `d`.`id` is not null then 'DEVUELTO' when current_timestamp() > `p`.`fecha_limite` then 'ATRASADO' else 'ACTIVO' end AS `situacion` from (((`prestamos` `p` join `estudiantes` `e` on(`e`.`id` = `p`.`estudiante_id`)) join `recursos` `r` on(`r`.`id` = `p`.`recurso_id`)) left join `devoluciones` `d` on(`d`.`prestamo_id` = `p`.`id`))"
+    }
+}
