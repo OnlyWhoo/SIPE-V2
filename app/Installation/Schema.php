@@ -14,13 +14,13 @@ final class Schema
         $q=$pdo->prepare('SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=? AND TABLE_NAME=?');$q->execute([$database,$table]);
         $engine=$q->fetchColumn();
         if($engine===false){throw new RuntimeException('Falta una tabla del esquema: '.$table);}
-        $q=$pdo->prepare('SELECT COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE,COLUMN_DEFAULT,EXTRA,GENERATION_EXPRESSION FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? ORDER BY ORDINAL_POSITION');$q->execute([$database,$table]);$columns=[];
+        $q=$pdo->prepare('SELECT COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE,COLUMN_DEFAULT,EXTRA,GENERATION_EXPRESSION,COLLATION_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? ORDER BY ORDINAL_POSITION');$q->execute([$database,$table]);$columns=[];
         foreach($q as $c){
             $type=preg_replace('/\b(tinyint|smallint|mediumint|int|bigint)\(\d+\)/i','$1',$c['COLUMN_TYPE']);
             $default=$c['COLUMN_DEFAULT'];
             if($default!==null && strlen($default)>=2 && $default[0]==="'" && substr($default,-1)==="'"){$default=substr($default,1,-1);}
             $extra=trim(str_replace('default_generated','',strtolower($c['EXTRA'])));
-            $columns[]=[$c['COLUMN_NAME'],strtolower($type),$c['IS_NULLABLE'],self::expression($default),$extra,self::expression($c['GENERATION_EXPRESSION']?:null)];
+            $columns[]=[$c['COLUMN_NAME'],strtolower($type),$c['IS_NULLABLE'],self::expression($default),$extra,self::expression($c['GENERATION_EXPRESSION']?:null),$c['COLLATION_NAME']];
         }
         $q=$pdo->query('SHOW INDEX FROM `'.$table.'`');$indexes=[];
         foreach($q as $r){$indexes[$r['Key_name']]['unique']=!(bool)$r['Non_unique'];$indexes[$r['Key_name']]['columns'][(int)$r['Seq_in_index']]=[$r['Column_name'],$r['Sub_part']===null?null:(int)$r['Sub_part']];}

@@ -1,5 +1,6 @@
 /var/*
 !/var/.gitkeep
+!/var/protection-check.txt
 /dist/
 /config/*.local.php
 /config/local.php

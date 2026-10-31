@@ -3,7 +3,7 @@ declare(strict_types=1);
 use Sipe\Installation\Installer;
 use Sipe\Middleware\Security;
 $installer=new Installer($private,ROOT.'/database/install-plan.json');$error='';$pending=$installer->saved();
-$parameters=$pending['parameters']??['host'=>'127.0.0.1','port'=>'3306','database'=>'sipe_v2','user'=>'root','password'=>''];
+$parameters=$pending['parameters']??['host'=>'127.0.0.1','port'=>getenv('SIPE_DB_PORT')?:'3306','database'=>getenv('SIPE_DB_DATABASE')?:'sipe_v2','user'=>getenv('SIPE_DB_USER')?:'root','password'=>getenv('SIPE_DB_PASSWORD')?:''];
 try {
     if($_SERVER['REQUEST_METHOD']==='POST'){
         Security::verify(is_string($_POST['csrf']??null)?$_POST['csrf']:null);$parameters=Installer::parameters($_POST);
