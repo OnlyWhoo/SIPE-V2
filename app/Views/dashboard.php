@@ -1,0 +1,8 @@
+<div class="page-heading"><div><span class="eyebrow">OPERACIÓN DIARIA · FADP</span><h1>Panel principal</h1><p class="muted">Selecciona el proceso que necesitas realizar.</p></div><span class="pill light"><?= e(date('d/m/Y')) ?></span></div>
+<section class="primary-modules" aria-label="Procesos principales">
+<a class="module-link" href="<?= e(url('requests')) ?>"><span class="module-icon" aria-hidden="true">↔</span><div><span class="eyebrow">01 · PRÉSTAMOS</span><h2>Solicitud de Recursos</h2><p>Consultar solicitudes, reservar, entregar y reportar devoluciones.</p><strong>Ingresar al panel <span aria-hidden="true">→</span></strong></div></a>
+<a class="module-link" href="<?= e(url('borrower').'&mode=history') ?>"><span class="module-icon" aria-hidden="true">▤</span><div><span class="eyebrow">02 · ESTUDIANTES</span><h2>Hoja de Vida del Estudiante</h2><p>Identificar por código o QR y consultar su información e historial.</p><strong>Consultar estudiante <span aria-hidden="true">→</span></strong></div></a>
+</section>
+<div class="section-heading"><h2>Resumen de la operación</h2><?php if($user['rol']==='ADMINISTRADOR'): ?><a class="button secondary" href="<?= e(url('reports')) ?>">▥ Reportes</a><?php endif ?></div>
+<section class="stats" aria-label="Resumen operativo"><?php foreach($counts as $label=>$count): ?><article class="stat"><p><?= e($label) ?></p><strong><?= e($count) ?></strong><small><?= $label==='Préstamos activos'?'Devoluciones pendientes':'Registros actuales' ?></small></article><?php endforeach ?></section>
+<section class="card"><div class="section-heading"><h2>Movimientos recientes</h2><a href="<?= e(url('requests')) ?>">Ver solicitudes →</a></div><?php require ROOT.'/app/Views/table.php' ?></section>
