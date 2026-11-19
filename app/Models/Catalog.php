@@ -5,7 +5,7 @@ final class Catalog
 {
     // Lista cerrada: los identificadores SQL nunca provienen del formulario.
     public const DEFINITIONS = [
-        'estudiantes'=>['title'=>'Estudiantes y prestatarios','fields'=>['codigo_estudiante'=>'Código institucional','nombres'=>'Nombres','apellidos'=>'Apellidos','tipo_persona'=>'Grupo de trabajo','correo'=>'Correo','programa_id'=>'Programa académico'],'required'=>['codigo_estudiante','nombres','apellidos','tipo_persona']],
+        'estudiantes'=>['title'=>'Usuarios','fields'=>['codigo_estudiante'=>'Código institucional','nombres'=>'Nombres','apellidos'=>'Apellidos','tipo_persona'=>'Grupo de trabajo','correo'=>'Correo','programa_id'=>'Programa académico'],'required'=>['codigo_estudiante','nombres','apellidos','tipo_persona']],
         'programas_academicos'=>['title'=>'Programas académicos','fields'=>['codigo'=>'Código','nombre'=>'Nombre'],'required'=>['codigo','nombre']],
         'categorias_recursos'=>['title'=>'Categorías','fields'=>['nombre'=>'Nombre','descripcion'=>'Descripción'],'required'=>['nombre']],
         'recursos'=>['title'=>'Inventario','fields'=>['codigo_inventario'=>'Código de inventario','nombre'=>'Nombre','descripcion'=>'Descripción','categoria_id'=>'Categoría','estado_fisico'=>'Estado físico','estado_operativo'=>'Estado operativo'],'required'=>['codigo_inventario','nombre','categoria_id','estado_fisico','estado_operativo']],

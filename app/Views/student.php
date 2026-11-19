@@ -1,5 +1,5 @@
 <?php use Sipe\Services\Profiles; ?>
-<div class="page-heading"><div><span class="eyebrow">HOJA DE VIDA · ESTUDIANTE / PRESTATARIO</span><h1><?= e($student['nombres'].' '.$student['apellidos']) ?></h1><p class="muted"><?= e($student['codigo_estudiante']) ?> · <?= e($student['programa']??($student['tipo_persona']==='ADMINISTRATIVO'?'Programa: no aplica':'Sin programa registrado')) ?><?= !empty($student['programa_provisional'])?' · Asignación provisional':'' ?></p></div><a class="button secondary" href="<?= e(url('borrower').'&mode=history') ?>">← Buscar otra persona</a></div>
+<div class="page-heading"><div><span class="eyebrow">HOJA DE VIDA · USUARIO</span><h1><?= e($student['nombres'].' '.$student['apellidos']) ?></h1><p class="muted"><?= e($student['codigo_estudiante']) ?> · <?= e($student['programa']??($student['tipo_persona']==='ADMINISTRATIVO'?'Programa: no aplica':'Sin programa registrado')) ?><?= !empty($student['programa_provisional'])?' · Asignación provisional':'' ?></p></div><a class="button secondary" href="<?= e(url('borrower').'&mode=history') ?>">← Buscar otra persona</a></div>
 <section class="card student-card">
     <div><h2>Información del prestatario</h2><p><?= e($student['correo']) ?></p>
     <dl class="detail-grid">
@@ -7,7 +7,7 @@
         <div><dt>Estado en SIPE</dt><dd><?= $student['activo']?'Activo':'Inactivo' ?></dd></div>
         <div><dt>Fotografía</dt><dd>
             <?php if(Profiles::enabled()): ?>
-                <img width="40" height="40" src="<?= e(url('photo').'&id='.$student['id']) ?>" alt="">
+                <img class="borrower-profile-photo" width="140" height="170" src="<?= e(url('photo').'&id='.$student['id']) ?>" alt="">
                 <?= e(Profiles::caption($student)) ?>
             <?php else: ?>Sin fotografía autorizada registrada<?php endif ?>
         </dd></div>

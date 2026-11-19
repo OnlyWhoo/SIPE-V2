@@ -25,7 +25,7 @@ final class WorkflowController
             $student=isset($_GET['person'])?Workflow::byId(S::id($_GET['person'])):($identity===''?null:Workflow::student($identity));
             $identity=$student['codigo_estudiante']??$identity;
             $sanctions=$student?DB::all('SELECT tipo,motivo,estado,fecha_registro FROM sanciones WHERE estudiante_id=? ORDER BY id DESC LIMIT 30',[$student['id']]):[];
-            $data+=compact('identity','student','history','groups','type','sanctions');$data['title']=$history?'Hoja de Vida del Estudiante':'Identificación del prestatario';
+            $data+=compact('identity','student','history','groups','type','sanctions');$data['title']=$history?'Hoja de Vida del Usuario':'Identificación del prestatario';
         }elseif($route==='resources' || $route==='confirm'){
             $in=$post?$_POST:$_GET;[$type,$group]=LoanPolicy::options($in);$student=Workflow::byId(S::id($in['estudiante_id']??0));
             if($group!==$student['tipo_persona']){throw new \DomainException('El grupo debe coincidir con la ficha del prestatario.');}

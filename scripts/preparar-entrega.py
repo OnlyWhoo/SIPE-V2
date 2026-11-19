@@ -50,17 +50,29 @@ def identifier(cells, col, number):
     return value
 
 
-def people(book, excluded):
+def split_name(original, review, row):
+    entry = review.get(str(row), {})
+    boundary = entry.get("fin_apellidos")
+    if (entry.get("nombre_original") != original or type(boundary) is not int
+            or not 0 < boundary < len(original) - 1 or original[boundary] != " "):
+        raise ValueError(f"Revisa la separación de nombres y apellidos de la fila {row}")
+    surname, given = original[:boundary], original[boundary + 1:]
+    if any(not value or value != value.strip() or len(value) > 100 for value in (surname, given)):
+        raise ValueError(f"Nombres o apellidos inválidos en la revisión de la fila {row}")
+    return given, surname
+
+
+def people(book, excluded, review):
     result = []
     for number, cells in worksheet(book, 1, 128):
         code = identifier(cells, "B", number)
         if code == excluded:
             continue
         name = field(cells, "A")
-        given, separator, surname = name.partition(" ")
+        given, surname = split_name(name, review, number)
         role = field(cells, "D").upper()
         program = field(cells, "E")
-        if not separator or not given or not surname or role not in ROLES:
+        if role not in ROLES:
             raise ValueError(f"Fila de persona incompleta: {number}")
         if (program == "No aplica") != (role == "ADMINISTRATIVO"):
             raise ValueError(f"Programa incompatible con el rol en fila {number}")
@@ -68,6 +80,7 @@ def people(book, excluded):
             "fila": number,
             "codigo": code,
             "cedula": identifier(cells, "C", number),
+            "nombre_original": name,
             "nombres": given,
             "apellidos": surname,
             "rol": role,
@@ -141,9 +154,15 @@ def main():
     parser.add_argument("fotos", type=Path)
     parser.add_argument("salida_privada", type=Path)
     parser.add_argument("--codigo-excluido", required=True)
+    parser.add_argument(
+        "--nombres-revisados", type=Path, required=True,
+        help="JSON privado por fila de Excel con nombre_original y fin_apellidos "
+             "(índice del espacio que separa apellidos y nombres)",
+    )
     args = parser.parse_args()
+    review = json.loads(args.nombres_revisados.read_text(encoding="utf-8"))
     with ZipFile(args.excel) as book, ZipFile(args.fotos) as archive:
-        records = people(book, args.codigo_excluido)
+        records = people(book, args.codigo_excluido, review)
         valid, pending = inventory(book)
         portraits(archive, records)
     previous = args.salida_privada / "entrega-privada.json"

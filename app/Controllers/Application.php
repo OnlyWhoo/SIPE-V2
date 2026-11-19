@@ -85,11 +85,11 @@ final class Application
                 (SELECT COUNT(*) FROM prestamos WHERE estudiante_id=? AND estado='ACTIVO') AS activos,
                 (SELECT COUNT(*) FROM reservas WHERE estudiante_id=? AND estado IN ('CONFIRMADA','PENDIENTE_APROBACION') AND fin>NOW()) AS reservas,
                 (SELECT COUNT(*) FROM devoluciones d JOIN prestamos p ON p.id=d.prestamo_id WHERE p.estudiante_id=?) AS devoluciones",[$id,$id,$id]);
-            $sanctions=DB::all('SELECT tipo,motivo,estado,fecha_registro FROM sanciones WHERE estudiante_id=? ORDER BY id DESC LIMIT 100',[$id]);$allowed=DB::all('SELECT c.nombre FROM autorizaciones_programa_categoria a JOIN categorias_recursos c ON c.id=a.categoria_id WHERE a.programa_id=? AND c.activo=1',[$student['programa_id']]);\view('student',compact('user','student','rows','allowed','sanctions','totals')+['title'=>'Hoja de Estudiante']);return;
+            $sanctions=DB::all('SELECT tipo,motivo,estado,fecha_registro FROM sanciones WHERE estudiante_id=? ORDER BY id DESC LIMIT 100',[$id]);$allowed=DB::all('SELECT c.nombre FROM autorizaciones_programa_categoria a JOIN categorias_recursos c ON c.id=a.categoria_id WHERE a.programa_id=? AND c.activo=1',[$student['programa_id']]);\view('student',compact('user','student','rows','allowed','sanctions','totals')+['title'=>'Hoja de Vida del Usuario']);return;
         }
         if($route==='scan'){
             if($post){$student=\Sipe\Services\Workflow::student(S::text($_POST['token']??'',64));header('Location: '.\url('student').'&id='.$student['id'],true,303);exit;}
-            \view('scan',compact('user')+['title'=>'Identificar estudiante']);return;
+            \view('scan',compact('user')+['title'=>'Identificar usuario']);return;
         }
         if(in_array($route,['reservations','loans','inspections'],true)){
             if($post){match($_POST['action']??''){'reserve'=>Lending::reserve($_POST,(int)$user['id']),'cancel'=>Lending::cancel(S::id($_POST['id']??0)),'lend'=>Lending::lend($_POST,(int)$user['id']),'return'=>Lending::returnLoan($_POST,(int)$user['id']),'inspect'=>Lending::inspect($_POST,(int)$user['id']),default=>throw new \DomainException('Acción inválida.')};$_SESSION['flash']='Operación registrada correctamente.';\redirect($route);}
