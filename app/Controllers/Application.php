@@ -83,7 +83,7 @@ final class Application
                 WHERE q.estudiante_id=? ORDER BY inicio DESC LIMIT 100",[$id,$id]);
             $totals=DB::one("SELECT
                 (SELECT COUNT(*) FROM prestamos WHERE estudiante_id=? AND estado='ACTIVO') AS activos,
-                (SELECT COUNT(*) FROM reservas WHERE estudiante_id=? AND estado IN ('CONFIRMADA','PENDIENTE_APROBACION') AND fin>NOW()) AS reservas,
+                (SELECT COUNT(*) FROM reservas WHERE estudiante_id=? AND estado='CONFIRMADA' AND fin>NOW()) AS reservas,
                 (SELECT COUNT(*) FROM devoluciones d JOIN prestamos p ON p.id=d.prestamo_id WHERE p.estudiante_id=?) AS devoluciones",[$id,$id,$id]);
             $sanctions=DB::all('SELECT tipo,motivo,estado,fecha_registro FROM sanciones WHERE estudiante_id=? ORDER BY id DESC LIMIT 100',[$id]);$allowed=DB::all('SELECT c.nombre FROM autorizaciones_programa_categoria a JOIN categorias_recursos c ON c.id=a.categoria_id WHERE a.programa_id=? AND c.activo=1',[$student['programa_id']]);\view('student',compact('user','student','rows','allowed','sanctions','totals')+['title'=>'Hoja de Vida del Usuario']);return;
         }
@@ -102,8 +102,7 @@ final class Application
             $programs=Catalog::options('programa_id');$categories=Catalog::options('categoria_id');$rows=DB::all('SELECT p.nombre AS programa,c.nombre AS categoria,a.creado_en FROM autorizaciones_programa_categoria a JOIN programas_academicos p ON p.id=a.programa_id JOIN categorias_recursos c ON c.id=a.categoria_id');\view('authorizations',compact('user','programs','categories','rows')+['title'=>'Autorización académica']);return;
         }
         if($route==='sanctions'){
-            S::admin($user);if($post){if(($_POST['action']??'')==='resolve'){Administration::resolve($_POST,$user);}else{Administration::sanction($_POST,$user);}$_SESSION['flash']='Decisión registrada.';\redirect($route);}
-            $students=DB::all('SELECT id,CONCAT(codigo_estudiante,\' · \',nombres,\' \',apellidos) AS nombre FROM estudiantes ORDER BY codigo_estudiante');$rows=DB::all('SELECT s.*,CONCAT(e.nombres,\' \',e.apellidos) AS estudiante FROM sanciones s JOIN estudiantes e ON e.id=s.estudiante_id ORDER BY s.id DESC LIMIT 100');\view('sanctions',compact('user','students','rows')+['title'=>'Sanciones']);return;
+            (new SanctionsController())->handle($user,$post);return;
         }
         if($route==='audit' || $route==='reports'){
             S::admin($user);$from=S::text($_GET['from']??date('Y-m-01'),10);$to=S::text($_GET['to']??date('Y-m-d'),10);foreach([$from,$to] as $date){$d=\DateTimeImmutable::createFromFormat('!Y-m-d',$date);if(!$d || $d->format('Y-m-d')!==$date){throw new \DomainException('Fecha de filtro inválida.');}}

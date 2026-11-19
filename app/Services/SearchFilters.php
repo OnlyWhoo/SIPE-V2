@@ -7,12 +7,14 @@ final class SearchFilters
 {
     public static function apply(string $scope): array
     {
+        return $_GET + self::saved($scope);
+    }
+
+    public static function saved(string $scope): array
+    {
         $token = $_GET['filter'] ?? '';
         $filter = is_string($token) ? ($_SESSION['filters'][$token] ?? null) : null;
-        if (($filter['scope'] ?? null) === $scope) {
-            return $_GET + $filter['values'];
-        }
-        return $_GET;
+        return ($filter['scope'] ?? null) === $scope ? $filter['values'] : [];
     }
 
     public static function submit(string $scope,string $url,array $keys): never

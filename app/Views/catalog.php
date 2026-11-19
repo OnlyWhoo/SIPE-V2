@@ -11,4 +11,4 @@
 <label>Vigencia del carné<input name="carnet_vigencia" type="date" value="<?= e($edit['carnet_vigencia']??'') ?>"></label>
 <label>Fotografía<input name="fotografia" type="file" accept="image/jpeg,image/png,image/webp"></label>
 <?php endif ?>
-</div><p class="help">Los estudiantes requieren programa académico. Docentes, egresados y administrativos requieren aprobación manual por préstamo. Los cambios de grupo son exclusivos del administrador. Los registros se desactivan sin borrar su historial.</p><button>Guardar registro</button><?php if($edit): ?> <a href="<?= e($target) ?>">Cancelar edición</a><?php endif ?></form></section><?php endif ?>
+</div><p class="help">Los estudiantes requieren programa académico. Las categorías autorizadas por programa se aplican a los estudiantes. Los cambios de grupo son exclusivos del administrador. Los registros se desactivan sin borrar su historial.</p><button>Guardar registro</button><?php if($edit): ?> <a href="<?= e($target) ?>">Cancelar edición</a><?php endif ?></form></section><?php endif ?>

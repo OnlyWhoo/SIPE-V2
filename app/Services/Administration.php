@@ -15,12 +15,18 @@ final class Administration
         });
     }
     public static function sanction(array $in,array $user): void {
-        S::admin($user);$student=S::id($in['estudiante_id']??0);$loan=empty($in['prestamo_id'])?null:S::id($in['prestamo_id']);$type=S::text($in['tipo']??'',10);$reason=S::text($in['motivo']??'',5000);
+        S::admin($user);$student=S::id($in['estudiante_id']??0);
+        $loanValue=$in['prestamo_id']??'';$loan=$loanValue===''?null:S::id($loanValue);
+        $type=S::text($in['tipo']??'',10);$reason=S::text($in['motivo']??'',5000);
         if(!in_array($type,['MORA','DANIO','OTRA'],true)){throw new \DomainException('Tipo de sanción inválido.');}
         DB::transaction(function() use($student,$loan,$type,$reason,$user): void {
-            if(!DB::one('SELECT id FROM estudiantes WHERE id=? FOR UPDATE',[$student])){throw new \DomainException('Estudiante inexistente.');}
-            $p=$loan?DB::one('SELECT p.*,d.fecha_devolucion FROM prestamos p LEFT JOIN devoluciones d ON d.prestamo_id=p.id WHERE p.id=?',[$loan]):null;
-            if($loan && (!$p || (int)$p['estudiante_id']!==$student || $p['estado']==='ANULADO')){throw new \DomainException('El préstamo no corresponde al estudiante.');}
+            if(!DB::one('SELECT id FROM estudiantes WHERE id=? FOR UPDATE',[$student])){throw new \DomainException('Usuario inexistente.');}
+            $p=$loan===null?null:DB::one('SELECT p.estado,p.fecha_limite,d.fecha_devolucion
+                FROM prestamos p LEFT JOIN devoluciones d ON d.prestamo_id=p.id
+                WHERE p.id=? AND p.estudiante_id=?',[$loan,$student]);
+            if($loan!==null && (!$p || $p['estado']==='ANULADO')){
+                throw new \DomainException('Selecciona un préstamo válido del usuario encontrado.');
+            }
             if($type==='MORA'){
                 if(!$p || strtotime($p['fecha_devolucion']??'now')-strtotime($p['fecha_limite'])<=86400){throw new \DomainException('La mora requiere un préstamo con retraso superior a 24 horas.');}
                 if(!str_contains(mb_strtolower($reason),'política') && !str_contains(mb_strtolower($reason),'reglamento')){throw new \DomainException('Documenta la política o reglamento institucional que autoriza esta decisión.');}

@@ -50,7 +50,7 @@ final class Workflow
         $sql="SELECT 'R' origen,q.id,q.estudiante_id,q.recurso_id,q.inicio,NULL fecha_entrega,q.fin,NULL fecha_devolucion,q.tipo_prestamo,q.estado FROM reservas q WHERE q.estado<>'ATENDIDA' UNION ALL SELECT 'P',p.id,p.estudiante_id,p.recurso_id,COALESCE(q.inicio,p.fecha_entrega),p.fecha_entrega,p.fecha_limite,d.fecha_devolucion,p.tipo_prestamo,CASE WHEN p.estado='ACTIVO' AND p.fecha_limite<NOW() THEN 'ATRASADO' ELSE p.estado END FROM prestamos p LEFT JOIN reservas q ON q.id=p.reserva_id LEFT JOIN devoluciones d ON d.prestamo_id=p.id";
         $join=" FROM ($sql) m JOIN estudiantes e ON e.id=m.estudiante_id JOIN recursos r ON r.id=m.recurso_id JOIN categorias_recursos c ON c.id=r.categoria_id WHERE (e.codigo_estudiante LIKE ? OR CONCAT(e.nombres,' ',e.apellidos) LIKE ? OR r.codigo_inventario LIKE ? OR r.nombre LIKE ?)";
         $params=array_fill(0,4,'%'.$q.'%');
-        if($state==='ACTIVAS'){$join.=" AND m.estado IN ('PENDIENTE_APROBACION','CONFIRMADA','ACTIVO','ATRASADO')";}
+        if($state==='ACTIVAS'){$join.=" AND m.estado IN ('CONFIRMADA','ACTIVO','ATRASADO')";}
         elseif($state!=='TODAS'){if(!in_array($state,['PENDIENTE_APROBACION','CONFIRMADA','ACTIVO','ATRASADO','DEVUELTO','CANCELADA','VENCIDA','ANULADO'],true)){throw new \DomainException('Estado inválido.');}$join.=' AND m.estado=?';$params[]=$state;}
         if($category){$join.=' AND r.categoria_id=?';$params[]=$category;}
         if($from){$join.=' AND m.inicio>=?';$params[]=$from;}

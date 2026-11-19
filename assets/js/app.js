@@ -1,5 +1,38 @@
 'use strict';
-document.querySelectorAll('form[data-confirm]').forEach(form=>form.addEventListener('submit',event=>{if(!window.confirm(form.dataset.confirm)){event.preventDefault();}}));
+document.querySelectorAll('form[data-confirm], form[data-single-submit]').forEach(form=>{
+  form.addEventListener('submit',event=>{
+    if(form.dataset.submitting || (form.dataset.confirm && !window.confirm(form.dataset.confirm))){
+      event.preventDefault();
+      return;
+    }
+    if(form.hasAttribute('data-single-submit')){
+      form.dataset.submitting='1';
+      form.setAttribute('aria-busy','true');
+    }
+  });
+});
+window.addEventListener('pageshow',event=>{
+  if(!event.persisted){return;}
+  document.querySelectorAll('form[data-submitting]').forEach(form=>{
+    delete form.dataset.submitting;
+    form.removeAttribute('aria-busy');
+  });
+});
+const sanctionForm=document.querySelector('form[data-sanction]');
+if(sanctionForm){
+  const type=sanctionForm.elements.tipo;
+  const loan=sanctionForm.elements.prestamo_id;
+  const summary=sanctionForm.querySelector('[data-loan-summary]');
+  const requireLoan=()=>{loan.required=type.value==='MORA';};
+  const describeLoan=()=>{
+    summary.hidden=!loan.value;
+    summary.textContent=loan.value?loan.selectedOptions[0].textContent.trim():'';
+  };
+  type.addEventListener('change',requireLoan);
+  loan.addEventListener('change',describeLoan);
+  requireLoan();
+  describeLoan();
+}
 const scanButton=document.getElementById('scan-qr');
 if(scanButton){scanButton.addEventListener('click',async()=>{
   const status=document.getElementById('scan-status');const video=document.getElementById('qr-video');let stream;

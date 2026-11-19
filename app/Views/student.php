@@ -14,7 +14,7 @@
         <div><dt>Cédula</dt><dd><?= e($student['cedula']??'Sin información registrada') ?></dd></div>
         <div><dt>Vigencia del carné</dt><dd><?= e(Profiles::date($student['carnet_vigencia']??null)) ?></dd></div>
     </dl>
-    <h3>Autorización de recursos</h3><p class="help"><?= $student['tipo_persona']==='ESTUDIANTE'?e(implode(' · ',array_column($allowed,'nombre'))?:'Sin categorías académicas autorizadas'):'Requiere aprobación manual del administrador para cada préstamo.' ?></p>
+    <h3>Autorización de recursos</h3><p class="help"><?= $student['tipo_persona']==='ESTUDIANTE'?e(implode(' · ',array_column($allowed,'nombre'))?:'Sin categorías académicas autorizadas'):'Puede solicitar cualquier categoría según la disponibilidad y las condiciones del recurso.' ?></p>
     <p class="help">El QR identifica la ficha; su consulta requiere una sesión del personal.</p>
     <a class="button" href="<?= e(url('borrower').'&person='.$student['id']) ?>">+ Solicitar Recurso</a></div>
     <img width="190" height="190" src="<?= e(url('qr').'&id='.$student['id']) ?>" alt="QR de identificación del prestatario">
