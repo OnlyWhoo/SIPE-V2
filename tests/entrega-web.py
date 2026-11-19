@@ -178,6 +178,10 @@ def main():
     check("Entrega física registrada" in text(post("confirm", staff_loan)),
           "entrega directa a docente sin reserva aprobada")
 
+    current_reservation = immediate | {"action": "reserve"}
+    check("Reserva confirmada" in text(post("confirm", current_reservation)),
+          "reserva del estudiante antes de la sanción con horario de entrega vigente")
+
     sanctions = get("sanctions")
     check(sanctions[0] == 200 and "Buscar usuario por código institucional" in text(sanctions)
           and 'name="estudiante_id"' not in text(sanctions), "sanciones abre sin listado de personas")
@@ -206,15 +210,62 @@ def main():
     saved = request(browser, lookup[1], sanction | {"prestamo_id": "1"})
     check("Sanción registrada" in text(saved) and "Evidencia sintética de daño" in text(saved)
           and inventory["recursos"][0]["nombre"] in text(saved), "daño guarda sanción y recurso relacionado")
+    block = "El usuario tiene una sanción activa y no puede solicitar recursos hasta que sea resuelta"
+    badge = "BLOQUEADO POR SISTEMAS"
+    check("<td>DAÑO</td>" in text(saved) and " · DAÑO</option>" in text(saved),
+          "DAÑO en historial de sanciones y selector de resolución")
+    for identity in (person["codigo"], person["qr"]):
+        identified = post("borrower", {"csrf": token, "identity": identity})
+        page = text(identified)
+        check(identified[0] == 200 and f"person={student_id}" in identified[1]
+              and badge in page and "Hoja de vida</a>" in page and block in page
+              and re.search(r"<button disabled[^>]*>INGRESAR", page) and "<td>DAÑO</td>" in page,
+              "código y QR identifican al estudiante bloqueado con INGRESAR deshabilitado")
+    profile = text(get("student", id=student_id))
+    check("<td>DAÑO</td>" in profile and block in profile and "Reservas vigentes 2" in profile,
+          "hoja de vida conserva reservas y muestra DAÑO y la sanción abierta")
+    report = text(get("reports", report="sanciones", identity=person["codigo"]))
+    check("<td>DAÑO</td>" in report and "<td>DANIO</td>" not in report, "informe de sanciones muestra DAÑO")
+    parameters = {k: v for k, v in start.items() if k != "csrf"}
+    direct = get("resources", **parameters)
+    check(direct[0] == 422 and block in text(direct) and 'id="resource-filters"' not in text(direct),
+          "el enlace directo a recursos muestra el aviso sin habilitar la operación")
+    for fields in (start, start | {"action": "reserve"}, immediate):
+        direct = post("confirm", fields)
+        check(direct[0] == 422 and block in text(direct) and 'value="reserve"' not in text(direct),
+              "POST directo de revisión, reserva o entrega queda bloqueado")
+    alternative = post("inspections", immediate)
+    check(alternative[0] == 422 and block in text(alternative),
+          "ruta alternativa de registro físico aplica la misma restricción PHP")
+    for result in (get("deliver", id=4), post("deliver", {
+        "csrf": token, "id": "4", "estado_fisico": "BUENO", "estudiante_id": administrative[0],
+    })):
+        check(result[0] == 422 and block in text(result) and "Confirmar entrega</button>" not in text(result),
+              "la reserva anterior no permite entrega por GET ni POST con identidad sustituida")
     empty = post("sanctions", {"csrf": token, "action": "search", "code": administrative[1]["codigo"]})
     check("Este usuario no tiene préstamos registrados." in text(empty) and 'option value="2"' not in text(empty),
           "usuario sin préstamos ve el aviso y carece de préstamos ajenos")
     optional = request(browser, empty[1], sanction | {"tipo": "OTRA", "prestamo_id": ""})
     check("Sanción registrada" in text(optional), "otra sanción conserva préstamo opcional")
+    staff_block = get("resources", **(parameters | {"estudiante_id": administrative[0], "grupo_trabajo": "ADMINISTRATIVO"}))
+    check(staff_block[0] == 422 and block in text(staff_block), "sanción OTRA abierta bloquea al administrativo")
     resolved = request(browser, lookup[1], {"csrf": token, "action": "resolve", "id": "1",
                                            "estado": "RESUELTA", "observaciones": "Resolución sintética"})
     check("Resolución registrada" in text(resolved) and "RESUELTA" in text(resolved),
           "historial y resolución de la sanción se conservan")
+    unblocked = text(get("borrower", person=student_id))
+    check(badge not in unblocked and block not in unblocked and not re.search(r"<button disabled[^>]*>INGRESAR", unblocked)
+          and get("resources", **parameters)[0] == 200, "resolver la sanción reanuda INGRESAR y recursos sin cambiar cuenta")
+    teacher_lookup = post("sanctions", {"csrf": token, "action": "search", "code": teacher[1]["codigo"]})
+    check("Sanción registrada" in text(request(browser, teacher_lookup[1], sanction | {"prestamo_id": "2"})),
+          "docente queda sancionado con un préstamo activo")
+    teacher_page = text(get("borrower", person=teacher[0]))
+    check(badge in teacher_page and post("confirm", external | {"action": "reserve"})[0] == 422,
+          "docente sancionado queda bloqueado para nuevas reservas")
+    check("Devolución registrada" in text(post("return-loan", {
+        "csrf": token, "id": "2", "estado_fisico": "BUENO", "apto": "1",
+    }, id=2)), "una sanción abierta permite devolver el préstamo existente")
+
     not_found = post("sanctions", {"csrf": token, "action": "search", "code": "NO-EXISTE-QA"})
     check("No se encontró un usuario" in text(not_found) and 'name="prestamo_id"' not in text(not_found),
           "código inexistente no carga préstamos ni formulario de sanción")

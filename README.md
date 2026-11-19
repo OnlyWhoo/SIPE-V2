@@ -30,8 +30,10 @@ El estado **Solicitudes pendientes históricas** del panel permite localizar tr�
 
 1. Abre **Sanciones** con una cuenta administradora. En **Buscar usuario por código institucional**, escribe el código completo y pulsa **Buscar**. La ficha muestra el nombre, el código, el grupo y el estado en SIPE.
 2. En **Seleccionar préstamo relacionado**, elige el movimiento por recurso, referencia, fechas y estado. La lista solo contiene préstamos del usuario encontrado e indica si hubo retraso.
-3. Selecciona el tipo, escribe el fundamento y la evidencia, y registra la sanción. Para **Mora** el préstamo es obligatorio, el retraso debe superar 24 horas y el fundamento debe citar el reglamento o la política aplicable. Para **Daño** y **Otra**, el préstamo es opcional.
+3. Selecciona el tipo, escribe el fundamento y la evidencia, y registra la sanción. Para **Mora** el préstamo es obligatorio, el retraso debe superar 24 horas y el fundamento debe citar el reglamento o la política aplicable. Para **DAÑO** y **Otra**, el préstamo es opcional.
 4. Usa **Resolver o anular** para documentar la decisión y consulta el historial en la misma página.
+
+Una sanción **ABIERTA** bloquea nuevas solicitudes, reservas y entregas, incluida la entrega de una reserva anterior. La identificación muestra **BLOQUEADO POR SISTEMAS** y deshabilita **INGRESAR**. El prestatario conserva el acceso a su historial y puede devolver recursos. Cuando deja de tener sanciones abiertas, recupera el acceso al flujo de préstamos con su mismo estado de cuenta.
 
 ## Procedencia de los datos
 
