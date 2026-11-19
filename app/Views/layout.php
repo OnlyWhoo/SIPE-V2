@@ -1,6 +1,12 @@
-<?php use Sipe\Middleware\Security; $base=rtrim(config()['base_path'],'/'); ?>
+<?php use Sipe\Middleware\Security;
+$base=rtrim(config()['base_path'],'/');
+$workspaceCss=$base.'/assets/css/workspace.css';
+if($name==='workflow' && ($route??'')==='borrower' && empty($history) && !empty($blocked)){
+    $workspaceCss.='?v='.hash_file('sha256',ROOT.'/assets/css/workspace.css');
+}
+?>
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= e($title) ?> · SIPE</title><link rel="stylesheet" href="<?= e($base) ?>/assets/css/style.css"><script defer src="<?= e($base) ?>/assets/js/app.js"></script><?php if(!empty($user)): ?><link rel="stylesheet" href="<?= e($base) ?>/assets/css/workspace.css"><script defer src="<?= e($base) ?>/assets/js/workflow.js"></script><?php endif ?></head>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= e($title) ?> · SIPE</title><link rel="stylesheet" href="<?= e($base) ?>/assets/css/style.css"><script defer src="<?= e($base) ?>/assets/js/app.js"></script><?php if(!empty($user)): ?><link rel="stylesheet" href="<?= e($workspaceCss) ?>"><script defer src="<?= e($base) ?>/assets/js/workflow.js"></script><?php endif ?></head>
 <body class="<?= empty($user)?'guest':'workspace' ?>"><a class="skip" href="#main">Saltar al contenido</a>
 <?php if(!empty($user)): ?>
 <aside class="sidebar"><a class="brand" href="<?= e(url('dashboard')) ?>"><img src="<?= e($base) ?>/assets/img/logo.png" alt="Fundación Academia de Dibujo Profesional"><strong>SIPE<span>Gestión de recursos académicos</span></strong></a><p class="nav-label">ÁREA DE PRÉSTAMOS</p><nav aria-label="Navegación principal">

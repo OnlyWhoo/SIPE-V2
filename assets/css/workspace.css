@@ -10,6 +10,28 @@
 @media print{.workspace .sidebar,.workspace .topbar,.workspace .page-footer,.skip,.no-print{display:none!important}.workspace .shell{margin:0}.workspace .shell main{padding:0}.workspace .card{border:0;box-shadow:none}.voucher{max-width:none}body.workspace{background:#fff}.voucher-header{break-inside:avoid}a{color:inherit;text-decoration:none}}
 
 .workspace td{overflow-wrap:normal;min-width:85px}.workspace th{font-family:inherit}.movements-table{min-width:1700px}.movements-table td{white-space:nowrap;max-width:none}.movements-table td:nth-child(4){min-width:190px}.movements-table td:nth-child(6){min-width:180px}.movements-table td:first-child{min-width:55px}
-.student-context.has-system-block{flex-wrap:wrap}
-.has-system-block .borrower-identity{display:flex;align-items:inherit;gap:inherit;min-width:0}
-.student-context .borrower-system-block{flex:1 0 max-content;max-width:100%;align-self:center;text-align:center;color:#E20917;font-size:18px;font-weight:700}
+.student-context.has-system-block {
+  display: grid;
+  grid-template-columns: 72px minmax(0, max-content) max-content minmax(min-content, 1fr);
+  align-items: center;
+}
+.student-context.has-system-block > .borrower-details {
+  overflow-wrap: anywhere;
+}
+.student-context.has-system-block > .borrower-system-block {
+  color: #E20917;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  overflow-wrap: normal;
+}
+@media (max-width: 720px) {
+  .student-context.has-system-block {
+    grid-template-columns: 72px minmax(0, 1fr) fit-content(40%);
+    align-items: start;
+    column-gap: 10px;
+  }
+  .student-context.has-system-block > .borrower-system-block {
+    grid-column: 1 / -1;
+  }
+}
