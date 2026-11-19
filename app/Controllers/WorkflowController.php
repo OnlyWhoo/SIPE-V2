@@ -3,7 +3,7 @@ declare(strict_types=1);
 namespace Sipe\Controllers;
 use Sipe\Models\Database as DB;
 use Sipe\Middleware\Security as S;
-use Sipe\Services\{Workflow,LoanPolicy,Lending,Audit,SearchFilters};
+use Sipe\Services\{Workflow,LoanPolicy,Lending,Audit,Sanctions,SearchFilters};
 final class WorkflowController
 {
     public function handle(string $route,array $user,bool $post): void {
@@ -34,9 +34,16 @@ final class WorkflowController
             $student=isset($_GET['person'])?Workflow::byId(S::id($_GET['person'])):($identity===''?null:Workflow::student($identity));
             $identity=$student['codigo_estudiante']??$identity;
             $sanctions=$student?DB::all('SELECT tipo,motivo,estado,fecha_registro FROM sanciones WHERE estudiante_id=? ORDER BY id DESC LIMIT 30',[$student['id']]):[];
-            $data+=compact('identity','student','history','groups','type','sanctions');$data['title']=$history?'Hoja de Vida del Usuario':'Identificación del prestatario';
+            $blocked=$student && Sanctions::hasOpen((int)$student['id']);
+            $data+=compact('identity','student','history','groups','type','sanctions','blocked');$data['title']=$history?'Hoja de Vida del Usuario':'Identificación del prestatario';
         }elseif($route==='resources' || $route==='confirm'){
-            $in=$post?$_POST:$_GET;[$type,$group]=LoanPolicy::options($in);$student=Workflow::byId(S::id($in['estudiante_id']??0));
+            $in=$post?$_POST:$_GET;
+            $student=Workflow::byId(S::id($in['estudiante_id']??0));
+            if($route==='resources' && Sanctions::hasOpen((int)$student['id'])){
+                $this->showBlocked($data,$student,'Selección de recursos');
+                return;
+            }
+            [$type,$group]=LoanPolicy::options($in);
             if($group!==$student['tipo_persona']){throw new \DomainException('El grupo debe coincidir con la ficha del prestatario.');}
             if(!$student['activo'] || ($student['tipo_persona']==='ESTUDIANTE' && !$student['programa_activo'])){throw new \DomainException('El estudiante o su programa está inactivo en SIPE.');}
             $day=Workflow::date((string)($in['day']??date('Y-m-d')));$time=S::text($in['time']??date('H:i'),5);
@@ -85,8 +92,12 @@ final class WorkflowController
         }elseif($route==='deliver'){
             $id=S::id(($post?$_POST:$_GET)['id']??0);$reservation=DB::one('SELECT * FROM reservas WHERE id=?',[$id]);
             if(!$reservation || $reservation['estado']!=='CONFIRMADA'){throw new \DomainException('Selecciona una reserva confirmada.');}
-            if($reservation['inicio']>date('Y-m-d H:i:s') || $reservation['fin']<=date('Y-m-d H:i:s')){throw new \DomainException('La entrega solo puede registrarse durante el horario reservado.');}
             $student=Workflow::byId((int)$reservation['estudiante_id']);
+            if(!$post && Sanctions::hasOpen((int)$student['id'])){
+                $this->showBlocked($data,$student,'Reportar Entrega');
+                return;
+            }
+            if($reservation['inicio']>date('Y-m-d H:i:s') || $reservation['fin']<=date('Y-m-d H:i:s')){throw new \DomainException('La entrega solo puede registrarse durante el horario reservado.');}
             if($post){
                 // El formulario nunca sustituye la identidad, el recurso ni el plazo de la reserva.
                 $in=[
@@ -102,6 +113,10 @@ final class WorkflowController
                     $_SESSION['flash']='Entrega registrada. La reserva quedó atendida.';
                     \redirect('requests');
                 } catch(\DomainException $error) {
+                    if($error->getMessage()===Sanctions::BLOCK_MESSAGE){
+                        $this->showBlocked($data,$student,'Reportar Entrega');
+                        return;
+                    }
                     $data['formError']=self::validationError($error);
                 }
             }
@@ -130,6 +145,13 @@ final class WorkflowController
             $data+=['closing'=>LoanPolicy::closing(),'groups'=>LoanPolicy::groups(),'title'=>'Reglas de préstamo'];
         }
         \view('workflow',$data);
+    }
+
+    private function showBlocked(array $data,array $student,string $title): void {
+        http_response_code(422);
+        $data['formError']=Sanctions::BLOCK_MESSAGE;
+        $data['hideOperation']=true;
+        \view('workflow',$data+compact('student','title'));
     }
 
     private static function validationError(\DomainException $error): string {

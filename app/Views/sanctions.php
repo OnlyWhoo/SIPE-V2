@@ -1,5 +1,5 @@
 <div class="page-heading"><div><span class="eyebrow">SEGUIMIENTO ADMINISTRATIVO</span><h1>Sanciones</h1><p class="muted">Decisiones documentadas, sin tarifas ni multas automáticas.</p></div></div><div class="notice">Los retrasos superiores a 24 horas requieren revisión. Confirma y cita el reglamento institucional antes de registrar una sanción por mora.</div>
-<?php use Sipe\Middleware\Security; ?>
+<?php use Sipe\Middleware\Security; use Sipe\Services\Sanctions; ?>
 <?php if($formError): ?><p class="notice error" role="alert"><?= e($formError) ?></p><?php endif ?>
 <section class="card">
     <h2>Registrar decisión</h2>
@@ -53,7 +53,7 @@
                 </div>
                 <label>Motivo
                     <select name="tipo">
-                        <?php foreach(['MORA'=>'Mora superior a 24 horas','DANIO'=>'Daño','OTRA'=>'Otro incumplimiento autorizado'] as $value=>$label): ?>
+                        <?php foreach(['MORA'=>'Mora superior a 24 horas','DANIO'=>Sanctions::typeLabel('DANIO'),'OTRA'=>'Otro incumplimiento autorizado'] as $value=>$label): ?>
                             <option value="<?= e($value) ?>" <?= $type===$value?'selected':'' ?>><?= e($label) ?></option>
                         <?php endforeach ?>
                     </select>
@@ -66,4 +66,4 @@
         </form>
     <?php endif ?>
 </section>
-<section class="card"><h2>Resolver o anular</h2><form method="post" action="<?= e($target) ?>" data-single-submit><input type="hidden" name="csrf" value="<?= e(Security::token()) ?>"><input type="hidden" name="action" value="resolve"><div class="form-grid"><label>Sanción abierta<select name="id" required><option value="">Seleccionar</option><?php foreach($rows as $s): if($s['estado']!=='ABIERTA')continue; ?><option value="<?= e($s['id']) ?>">#<?= e($s['id'].' · '.$s['estudiante'].' · '.$s['tipo']) ?></option><?php endforeach ?></select></label><label>Estado<select name="estado"><option value="RESUELTA">Resuelta</option><option value="ANULADA">Anulada</option></select></label><label>Justificación<textarea name="observaciones" required maxlength="5000"></textarea></label></div><button>Guardar resolución</button></form></section><section class="card"><h2>Historial · últimos 100 registros</h2><?php require ROOT.'/app/Views/table.php' ?></section>
+<section class="card"><h2>Resolver o anular</h2><form method="post" action="<?= e($target) ?>" data-single-submit><input type="hidden" name="csrf" value="<?= e(Security::token()) ?>"><input type="hidden" name="action" value="resolve"><div class="form-grid"><label>Sanción abierta<select name="id" required><option value="">Seleccionar</option><?php foreach($rows as $s): if($s['estado']!=='ABIERTA')continue; ?><option value="<?= e($s['id']) ?>">#<?= e($s['id'].' · '.$s['estudiante'].' · '.Sanctions::typeLabel($s['tipo'])) ?></option><?php endforeach ?></select></label><label>Estado<select name="estado"><option value="RESUELTA">Resuelta</option><option value="ANULADA">Anulada</option></select></label><label>Justificación<textarea name="observaciones" required maxlength="5000"></textarea></label></div><button>Guardar resolución</button></form></section><section class="card"><h2>Historial · últimos 100 registros</h2><?php $columnFormatters=['tipo'=>[Sanctions::class,'typeLabel']]; require ROOT.'/app/Views/table.php' ?></section>

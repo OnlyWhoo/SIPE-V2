@@ -37,6 +37,15 @@ final class Administration
     public static function resolve(array $in,array $user): void {
         S::admin($user);$id=S::id($in['id']??0);$notes=S::text($in['observaciones']??'',5000);$state=$in['estado']??'';
         if(!in_array($state,['RESUELTA','ANULADA'],true)){throw new \DomainException('Estado inválido.');}
-        DB::transaction(function() use($id,$notes,$state): void {if(!DB::run("UPDATE sanciones SET estado=?,fecha_resolucion=NOW(),observaciones_resolucion=? WHERE id=? AND estado='ABIERTA'",[$state,$notes,$id])){throw new \DomainException('Sanción inexistente o cerrada.');}Audit::record('RESOLVER_SANCION','sanciones',$id,$notes);});
+        $sanction=DB::one('SELECT estudiante_id FROM sanciones WHERE id=?',[$id]);
+        if(!$sanction){throw new \DomainException('Sanción inexistente o cerrada.');}
+        DB::transaction(function() use($id,$notes,$state,$sanction): void {
+            // Respeta el mismo orden de bloqueos que el registro de sanciones y los préstamos.
+            DB::one('SELECT id FROM estudiantes WHERE id=? FOR UPDATE',[$sanction['estudiante_id']]);
+            if(!DB::run("UPDATE sanciones SET estado=?,fecha_resolucion=NOW(),observaciones_resolucion=? WHERE id=? AND estado='ABIERTA'",[$state,$notes,$id])){
+                throw new \DomainException('Sanción inexistente o cerrada.');
+            }
+            Audit::record('RESOLVER_SANCION','sanciones',$id,$notes);
+        });
     }
 }

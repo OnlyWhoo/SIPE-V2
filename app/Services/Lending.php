@@ -16,6 +16,7 @@ final class Lending
         $s=DB::one('SELECT * FROM estudiantes WHERE id=? FOR UPDATE',[$student]);
         $r=DB::one('SELECT * FROM recursos WHERE id=? FOR UPDATE',[$resource]);
         if(!$s || !$r || !$s['activo'] || !$r['activo']){throw new \DomainException('Estudiante o recurso inactivo o inexistente.');}
+        Sanctions::requireClear($student);
         if($s['tipo_persona']!==$group){throw new \DomainException('El grupo debe coincidir con la ficha del prestatario.');}
         $isStudent=$group==='ESTUDIANTE';
         $p=$isStudent && $s['programa_id']?DB::one('SELECT activo FROM programas_academicos WHERE id=? LOCK IN SHARE MODE',[$s['programa_id']]):null;
