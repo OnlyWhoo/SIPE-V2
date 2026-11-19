@@ -16,10 +16,22 @@ PHP debe tener habilitadas `pdo_mysql`, `mbstring`, `xmlwriter`, `dom`, `session
 ## Uso de la entrega
 
 - En **Solicitud de Recursos** identifica al prestatario por el código institucional o mediante el lector QR. Desde la ficha, **+ Solicitar Recurso** lleva al mismo flujo con la persona seleccionada.
-- En **Hoja de Vida del Estudiante** consulta datos del prestatario, vigencia, QR, autorizaciones y movimientos. Puedes abrir la imagen del QR en otra pestaña e imprimirla desde el navegador.
-- En **Estudiantes**, un administrador puede editar la cédula, la fecha de vigencia del carné o reemplazar la fotografía en el formulario existente. El campo de programa permite actualizar una asignación docente.
+- En **Hoja de Vida del Usuario** consulta datos del prestatario, vigencia, QR, autorizaciones y movimientos. Puedes abrir la imagen del QR en otra pestaña e imprimirla desde el navegador.
+- En **Usuarios de préstamos**, un administrador puede editar la cédula, la fecha de vigencia del carné o reemplazar la fotografía en el formulario existente. El campo de programa permite actualizar una asignación docente.
 - En **Autorización académica**, el administrador configura las categorías habilitadas para cada programa. La entrega conserva la regla previa de autorización estudiantil. El Excel aporta carreras e inventario. Las autorizaciones nuevas se registran en ese panel conforme a la información institucional.
-- Las solicitudes de docentes siguen la aprobación manual existente. Esta aplicación de la regla a docentes es provisional hasta confirmación institucional.
+- **Estudiantes.** Solo pueden reservar o recibir recursos de categorías autorizadas para su programa. SIPE comprueba esa regla al revisar y al registrar el préstamo. Las autorizaciones se configuran en **Autorización académica** y se muestran en la hoja de vida.
+- **Docentes y administrativos.** Pueden reservar o recibir recursos de cualquier categoría activa. La carrera del docente es informativa. Para los tres grupos, la reserva o la entrega se registra desde la pantalla de confirmación si el recurso y el prestatario están activos y se cumplen los controles de estado, disponibilidad, horarios y fechas.
+
+### Solicitudes pendientes históricas
+
+El estado **Solicitudes pendientes históricas** del panel permite localizar trámites anteriores que no ocupan horario. Revisa cada solicitud con su responsable. Si se descarta o se sustituye, selecciónala y usa **Cancelar Solicitud**. La cancelación conserva el registro y se audita. Cuando el recurso todavía se requiera, ingresa una reserva nueva con sus datos y valida la disponibilidad actual. Las aprobaciones registradas previamente siguen en el historial.
+
+### Sanciones
+
+1. Abre **Sanciones** con una cuenta administradora. En **Buscar usuario por código institucional**, escribe el código completo y pulsa **Buscar**. La ficha muestra el nombre, el código, el grupo y el estado en SIPE.
+2. En **Seleccionar préstamo relacionado**, elige el movimiento por recurso, referencia, fechas y estado. La lista solo contiene préstamos del usuario encontrado e indica si hubo retraso.
+3. Selecciona el tipo, escribe el fundamento y la evidencia, y registra la sanción. Para **Mora** el préstamo es obligatorio, el retraso debe superar 24 horas y el fundamento debe citar el reglamento o la política aplicable. Para **Daño** y **Otra**, el préstamo es opcional.
+4. Usa **Resolver o anular** para documentar la decisión y consulta el historial en la misma página.
 
 ## Procedencia de los datos
 

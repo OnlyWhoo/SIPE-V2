@@ -7,6 +7,7 @@ from http.cookiejar import CookieJar
 import json
 from pathlib import Path
 import re
+import secrets
 from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import HTTPCookieProcessor, Request, build_opener
@@ -46,6 +47,7 @@ def main():
     parser.add_argument("base")
     parser.add_argument("private", type=Path)
     parser.add_argument("--solo-arranque", action="store_true")
+    parser.add_argument("--database", help="Base nueva aislada de XAMPP para el ensayo")
     args = parser.parse_args()
     base = args.base.rstrip("/") + "/"
     if not re.fullmatch(r"http://127\.0\.0\.1/_sipe-entrega-qa-[a-z0-9]+/SIPE-V2/", base):
@@ -64,7 +66,16 @@ def main():
         return request(browser, base + "index.php?" + urlencode({"r": route, **params}), fields)
 
     login = request(browser, base)
-    check(login[0] == 200 and "r=login" in login[1], "instalación automática en una extracción limpia")
+    if args.database:
+        if not re.fullmatch(r"sipe_v2_qa_[a-z0-9_]+", args.database):
+            raise SystemExit("Usa una base de prueba nueva sipe_v2_qa_*.")
+        check(login[0] == 200 and "Preparar SIPE V2" in text(login),
+              "asistente de la extracción limpia con una base activa preexistente")
+        login = request(browser, base, {
+            "csrf": csrf(login[3]), "host": "127.0.0.1", "port": "3306",
+            "database": args.database, "user": "root", "password": "",
+        })
+    check(login[0] == 200 and "r=login" in login[1], "instalación desde el navegador")
     for path in ("database/entrega-privada.json", "database/arranque-privado.json", "database/inventario-entrega.json"):
         check(request(browser, base + path)[0] == 403, "Apache bloquea " + path)
     for route in ("photo", "qr"):
@@ -76,6 +87,7 @@ def main():
 
     student = next((i, person) for i, person in enumerate(source, 1) if person["rol"] == "ESTUDIANTE")
     teacher = next((i, person) for i, person in enumerate(source, 1) if person["rol"] == "DOCENTE")
+    administrative = next((i, person) for i, person in enumerate(source, 1) if person["rol"] == "ADMINISTRATIVO")
     student_id, person = student
     check("person=" + str(student_id) in post("borrower", {"csrf": token, "identity": person["codigo"]})[1],
           "identificación por código en Solicitud de Recursos")
@@ -116,14 +128,38 @@ def main():
     check("Reserva confirmada" in text(post("confirm", start | {"action": "reserve"})),
           "reserva interna del estudiante")
 
-    external = start | {"estudiante_id": teacher[0], "grupo_trabajo": "DOCENTE", "recurso_id": 2,
+    other_resource = next(i for i, resource in enumerate(inventory["recursos"], 1)
+                          if resource["tipo"] != inventory["recursos"][0]["tipo"])
+    blocked = post("confirm", start | {"recurso_id": other_resource, "action": "reserve"})
+    check(blocked[0] == 422 and "no está autorizado para esta categoría" in text(blocked),
+          "estudiante sigue limitado a su categoría tras autorizar otro recurso")
+    profile = text(get("student", id=student_id))
+    check(inventory["recursos"][0]["tipo"] in profile, "categoría autorizada visible en hoja de vida")
+
+    external = start | {"estudiante_id": teacher[0], "grupo_trabajo": "DOCENTE", "recurso_id": other_resource,
                         "tipo_prestamo": "EXTERNO", "fin": str(tomorrow) + "T16:30"}
-    check("Solicitar aprobación" in text(post("confirm", external)), "docente usa el formulario de aprobación existente")
-    pending = text(post("confirm", external | {"action": "reserve"}))
-    check("PENDIENTE APROBACION" in pending and "Aprobar solicitud" in pending, "solicitud docente queda pendiente")
-    check(post("requests", {"csrf": token, "id": 2, "action": "approve", "reason": "Verificación aislada"})[0] == 200,
-          "administrador aprueba la solicitud docente")
+    review = text(post("confirm", external))
+    check("RESERVAR" in review and "Solicitar aprobación" not in review and "data-single-submit" in review,
+          "docente conserva el paso de revisión con reserva directa")
+    check("Reserva confirmada" in text(post("confirm", external | {"action": "reserve"})),
+          "docente reserva una categoría distinta sin aprobación")
+    conflict = post("confirm", external | {
+        "estudiante_id": administrative[0], "grupo_trabajo": "ADMINISTRATIVO", "action": "reserve",
+    })
+    check(conflict[0] == 422 and "se cruza con una reserva confirmada" in text(conflict),
+          "el conflicto se muestra integrado en la pantalla de confirmación")
+    admin_request = external | {"estudiante_id": administrative[0], "grupo_trabajo": "ADMINISTRATIVO",
+                                "time": "16:30", "fin": str(tomorrow) + "T17:30", "action": "reserve"}
+    check("Reserva confirmada" in text(post("confirm", admin_request)),
+          "administrativo reserva sin aprobación en horario disponible")
+    panel = text(get("requests", estado="PENDIENTE_APROBACION"))
+    check("0 registros" in panel and "Aprobar y reservar" not in panel,
+          "nuevas reservas sin pendientes ni botón de aprobación")
+    check(post("requests", {"csrf": token, "id": 2, "action": "approve"})[0] == 422,
+          "servidor rechaza una acción de aprobación obsoleta")
     check(get("deliver", id=2)[0] == 422, "la reserva futura mantiene la restricción de horario de entrega")
+    check("Solicitud cancelada" in text(post("requests", {"csrf": token, "id": 3, "action": "cancel"})),
+          "cancelación conserva su confirmación y su resultado en página")
 
     now = datetime.now(timezone(timedelta(hours=-5)))
     finish = now + timedelta(hours=2)
@@ -137,6 +173,69 @@ def main():
     check(all(value in profile for value in ("Devoluciones 1", "Reservas vigentes 1", "DEVUELTO", "CONFIRMADA")),
           "historial de préstamos, reservas y devoluciones")
     check(get("reports")[0] == 200 and get("audit")[0] == 200, "reportes y auditoría")
+    staff_loan = immediate | {"estudiante_id": teacher[0], "grupo_trabajo": "DOCENTE",
+                              "recurso_id": other_resource}
+    check("Entrega física registrada" in text(post("confirm", staff_loan)),
+          "entrega directa a docente sin reserva aprobada")
+
+    sanctions = get("sanctions")
+    check(sanctions[0] == 200 and "Buscar usuario por código institucional" in text(sanctions)
+          and 'name="estudiante_id"' not in text(sanctions), "sanciones abre sin listado de personas")
+    check(post("sanctions", {"action": "search", "code": person["codigo"]})[0] == 403,
+          "búsqueda de sanciones exige CSRF")
+    lookup = post("sanctions", {"csrf": token, "action": "search", "code": person["codigo"]})
+    lookup_page = text(lookup)
+    check(lookup[0] == 200 and person["codigo"] not in lookup[1]
+          and person["nombres"] + " " + person["apellidos"] in lookup_page
+          and teacher[1]["nombres"] + " " + teacher[1]["apellidos"] not in lookup_page
+          and "Rol / grupo de trabajo" in lookup_page and "Estado en SIPE" in lookup_page,
+          "búsqueda por código exacto muestra únicamente la ficha encontrada")
+    chooser = re.search(r'<select name="prestamo_id".*?</select>', lookup_page, re.S)[0]
+    check(re.findall(r'<option value="([0-9]+)"', chooser) == ["1"]
+          and all(label in chooser for label in ("Ref.", "Entrega", "Vencimiento", "Devolución", "Devuelto")),
+          "selector automático muestra solo el préstamo del usuario con detalle")
+    sanction = {"csrf": token, "action": "register", "tipo": "DANIO", "motivo": "Evidencia sintética de daño"}
+    check(request(browser, lookup[1], sanction | {"prestamo_id": "2", "estudiante_id": teacher[0]})[0] == 422,
+          "servidor rechaza préstamo ajeno y manipulación del prestatario")
+    check(request(browser, lookup[1], sanction | {"tipo": "MORA", "prestamo_id": ""})[0] == 422,
+          "mora exige préstamo incluso sin validación de navegador")
+    check(request(browser, lookup[1], sanction | {"tipo": "MORA", "prestamo_id": "1"})[0] == 422,
+          "mora rechaza préstamos con retraso de 24 horas o menos")
+    check(request(browser, lookup[1], sanction | {"prestamo_id": "1", "motivo": ""})[0] == 422,
+          "sanciones exigen fundamento y evidencia")
+    saved = request(browser, lookup[1], sanction | {"prestamo_id": "1"})
+    check("Sanción registrada" in text(saved) and "Evidencia sintética de daño" in text(saved)
+          and inventory["recursos"][0]["nombre"] in text(saved), "daño guarda sanción y recurso relacionado")
+    empty = post("sanctions", {"csrf": token, "action": "search", "code": administrative[1]["codigo"]})
+    check("Este usuario no tiene préstamos registrados." in text(empty) and 'option value="2"' not in text(empty),
+          "usuario sin préstamos ve el aviso y carece de préstamos ajenos")
+    optional = request(browser, empty[1], sanction | {"tipo": "OTRA", "prestamo_id": ""})
+    check("Sanción registrada" in text(optional), "otra sanción conserva préstamo opcional")
+    resolved = request(browser, lookup[1], {"csrf": token, "action": "resolve", "id": "1",
+                                           "estado": "RESUELTA", "observaciones": "Resolución sintética"})
+    check("Resolución registrada" in text(resolved) and "RESUELTA" in text(resolved),
+          "historial y resolución de la sanción se conservan")
+    not_found = post("sanctions", {"csrf": token, "action": "search", "code": "NO-EXISTE-QA"})
+    check("No se encontró un usuario" in text(not_found) and 'name="prestamo_id"' not in text(not_found),
+          "código inexistente no carga préstamos ni formulario de sanción")
+
+    employee_email = f"operador-{secrets.token_hex(5)}@example.test"
+    employee_password = secrets.token_urlsafe(25)
+    check(post("catalog", {"csrf": token, "nombre_completo": "Personal de prueba",
+                           "correo": employee_email, "rol_id": 2, "password": employee_password},
+               table="usuarios")[0] == 200, "creación de operador sintético de prueba")
+    staff = client()
+    staff_login = request(staff, base)
+    staff_dashboard = request(staff, staff_login[1], {"csrf": csrf(staff_login[3]), "correo": employee_email,
+                                                       "password": employee_password})
+    check(staff_dashboard[0] == 200 and "r=dashboard" in staff_dashboard[1], "ingreso de operador")
+    no_access = request(staff, lookup[1])
+    check(no_access[0] == 403 and person["codigo"] not in text(no_access),
+          "operador no autorizado no recibe ficha ni préstamos")
+    check(request(staff, lookup[1], sanction | {"csrf": csrf(staff_dashboard[3]), "prestamo_id": "1"})[0] == 403,
+          "operador con CSRF válido no puede sancionar")
+    check("r=login" in request(client(), lookup[1])[1], "sanciones no expone datos a una sesión anónima")
+
     profile_change = {
         "csrf":token, "id":student_id, "codigo_estudiante":person["codigo"], "cedula":person["cedula"],
         "nombres":person["nombres"], "apellidos":person["apellidos"], "tipo_persona":"ESTUDIANTE",

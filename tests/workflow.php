@@ -40,19 +40,64 @@ test('entrega efectiva con responsable y hora',fn()=>expect((int)DB::one('SELECT
 test('préstamo activo ocupa hasta devolución real',function()use($resource){$slots=Workflow::availability($resource,'2099-05-02');expect(str_starts_with($slots[0]['estado'],'Prestado'));});
 test('vale externo usa registro persistido',function()use($loan,$employee){$v=Workflow::voucher($loan);expect($v['tipo_prestamo']==='EXTERNO' && (int)$v['entregado_por']===$employee['id']);});
 test('devolución efectiva actualiza inventario',function()use($loan,$resource,$employee){Lending::returnLoan(['prestamo_id'=>$loan,'estado_fisico'=>'BUENO','apto'=>'1'],$employee['id']);expect(DB::one('SELECT estado_operativo FROM recursos WHERE id=?',[$resource])['estado_operativo']==='DISPONIBLE');});
+$otherCategory=CatalogService::save('categorias_recursos',['nombre'=>'Categoría sintética sin autorización'],$admin);
+$otherResource=CatalogService::save('recursos',[
+    'codigo_inventario'=>'FLOW-OTRO-'.$code,'nombre'=>'Recurso sintético sin autorización',
+    'categoria_id'=>$otherCategory,'estado_fisico'=>'BUENO','estado_operativo'=>'DISPONIBLE',
+],$admin);
+$unapproved=array_replace($in,['recurso_id'=>$otherResource]);
+test('estudiante no puede revisar otra categoría',fn()=>Lending::preview($unapproved),true);
+test('estudiante no puede reservar otra categoría',fn()=>Lending::reserve($unapproved,$employee['id']),true);
+test('estudiante no puede recibir otra categoría',fn()=>Lending::lend(array_replace($current,['recurso_id'=>$otherResource]),$employee['id']),true);
+
+$inactiveProgram=CatalogService::save('programas_academicos',['codigo'=>'FLOW-DOC','nombre'=>'Programa descriptivo sintético'],$admin);
 foreach(['EGRESADO','ADMINISTRATIVO','DOCENTE'] as $group){
-    $person=CatalogService::save('estudiantes',['codigo_estudiante'=>'FLOW-'.$group.'-'.bin2hex(random_bytes(4)),'tipo_persona'=>$group,'nombres'=>'Persona sintética','apellidos'=>'de pruebas','programa_id'=>'','correo'=>''],$admin);
-    $request=$in;$request['estudiante_id']=$person;$request['grupo_trabajo']=$group;$request['inicio']=date('Y-m-d\TH:i');$request['fin']=date('Y-m-d\TH:i',time()+3600);
-    $pending=Lending::reserve($request,$employee['id']);
-    test("$group requiere aprobación por solicitud",fn()=>expect(DB::one('SELECT estado FROM reservas WHERE id=?',[$pending])['estado']==='PENDIENTE_APROBACION'));
-    test("$group empleado no puede aprobar",fn()=>Lending::approve($pending,'Aprobación sintética',$employee),true);
-    test("$group no se entrega sin aprobar",fn()=>Lending::lend(array_replace($current,['estudiante_id'=>$person,'grupo_trabajo'=>$group]),$employee['id']),true);
-    Lending::approve($pending,'Autorización manual sintética para esta solicitud',$admin);
-    $delivered=Lending::lend(array_replace($current,['estudiante_id'=>$person,'grupo_trabajo'=>$group,'reserva_id'=>$pending,'fin'=>$request['fin']]),$employee['id']);
-    test("$group entrega aprobada conserva grupo",fn()=>expect(Workflow::voucher($delivered)['grupo_trabajo']===$group));
+    $person=CatalogService::save('estudiantes',[
+        'codigo_estudiante'=>'FLOW-'.$group.'-'.bin2hex(random_bytes(4)),'tipo_persona'=>$group,
+        'nombres'=>'Persona sintética','apellidos'=>'de pruebas',
+        'programa_id'=>$group==='DOCENTE'?$inactiveProgram:'','correo'=>'',
+    ],$admin);
+    if($group==='DOCENTE'){
+        DB::run('UPDATE programas_academicos SET activo=0 WHERE id=?',[$inactiveProgram]);
+    }
+    $request=array_replace($in,[
+        'estudiante_id'=>$person,'grupo_trabajo'=>$group,'recurso_id'=>$otherResource,
+        'inicio'=>date('Y-m-d\TH:i'),'fin'=>date('Y-m-d\TH:i',time()+3600),
+    ]);
+    $reservationId=Lending::reserve($request,$employee['id']);
+    test("$group reserva confirmada sin aprobación individual",function()use($reservationId){
+        $row=DB::one('SELECT estado,aprobado_por FROM reservas WHERE id=?',[$reservationId]);
+        expect($row['estado']==='CONFIRMADA' && $row['aprobado_por']===null);
+        expect((bool)DB::one("SELECT id FROM auditoria WHERE accion='RESERVAR' AND entidad_id=?",[$reservationId]));
+    });
+    $delivery=array_replace($current,[
+        'estudiante_id'=>$person,'grupo_trabajo'=>$group,'recurso_id'=>$otherResource,'fin'=>$request['fin'],
+    ]);
+    test("$group reserva confirmada bloquea una entrega que no la vincula",fn()=>Lending::lend($delivery,$employee['id']),true);
+    $delivered=Lending::lend($delivery+['reserva_id'=>$reservationId],$employee['id']);
+    test("$group entrega vinculada conserva el grupo",fn()=>expect(Workflow::voucher($delivered)['grupo_trabajo']===$group));
     Lending::returnLoan(['prestamo_id'=>$delivered,'estado_fisico'=>'BUENO','apto'=>'1'],$employee['id']);
-    test("$group aprobación no se reutiliza",fn()=>Lending::lend(array_replace($current,['estudiante_id'=>$person,'grupo_trabajo'=>$group]),$employee['id']),true);
+    $direct=Lending::lend($delivery,$employee['id']);
+    test("$group puede recibir un préstamo directo",fn()=>expect(Workflow::voucher($direct)['reserva_id']===null));
+    Lending::returnLoan(['prestamo_id'=>$direct,'estado_fisico'=>'BUENO','apto'=>'1'],$employee['id']);
 }
+test('ninguna operación nueva queda pendiente',fn()=>expect(Workflow::movements(['estado'=>'PENDIENTE_APROBACION'])['total']===0));
+
+DB::run("INSERT INTO reservas(estudiante_id,recurso_id,creada_por,inicio,fin,tipo_prestamo,grupo_trabajo,estado)
+    VALUES(?,?,?,?,?,'EXTERNO','ESTUDIANTE','PENDIENTE_APROBACION')",
+    [$student['id'],$resource,$employee['id'],"2099-05-01 09:00:00","2099-05-01 11:00:00"]);
+$legacy=(int)DB::get()->lastInsertId();
+test('pendiente histórico visible en su filtro sin ocupar horario',function()use($legacy,$in){
+    expect((int)Workflow::movements(['estado'=>'PENDIENTE_APROBACION'])['rows'][0]['id']===$legacy);
+    Lending::preview($in);
+});
+test('pendiente histórico se cancela individualmente y se conserva',function()use($legacy,$in,$employee){
+    Lending::cancel($legacy);
+    $new=Lending::reserve($in,$employee['id']);
+    expect(DB::one('SELECT estado FROM reservas WHERE id=?',[$legacy])['estado']==='CANCELADA');
+    expect(DB::one('SELECT estado FROM reservas WHERE id=?',[$new])['estado']==='CONFIRMADA');
+    expect((bool)DB::one("SELECT id FROM auditoria WHERE accion='CANCELAR' AND entidad_id=?",[$legacy]));
+});
 test('empleado no registra administrativos',fn()=>CatalogService::save('estudiantes',['codigo_estudiante'=>'NO','tipo_persona'=>'ADMINISTRATIVO','nombres'=>'X','apellidos'=>'Y'],$employee),true);
 test('grupo falsificado rechazado',fn()=>Lending::reserve(array_replace($in,['grupo_trabajo'=>'ADMINISTRATIVO']),$employee['id']),true);
 test('reportes consultan todos los tipos disponibles',function(){foreach(Reports::LABELS as $key=>$label){expect(is_array(Reports::query(['report'=>$key])['rows']));}});

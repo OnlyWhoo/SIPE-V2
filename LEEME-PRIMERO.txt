@@ -12,7 +12,9 @@ elige un nombre nuevo como sipe_v2_evaluacion.
 
 En Solicitud de Recursos puedes identificar a un prestatario por código o QR.
 Las autorizaciones de estudiantes se configuran en Autorización académica.
-Las solicitudes de los docentes siguen la aprobación manual existente.
+Docentes y administrativos reservan o reciben recursos de forma directa,
+sujetos a disponibilidad y a los controles de préstamo. En Sanciones,
+el administrador busca por código y selecciona un préstamo del usuario.
 
 El ZIP contiene datos personales autorizados para la evaluación. Compártelo
 por el canal académico restringido. Consulta README.md para más información.
