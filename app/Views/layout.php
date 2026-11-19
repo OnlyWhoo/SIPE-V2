@@ -10,5 +10,5 @@
 <div class="shell"><header class="topbar"><div><span class="eyebrow">FADP / SIPE</span><strong>Panel Préstamos</strong></div><div class="account"><span><?= e($user['nombre_completo']) ?><small><?= e($user['rol']) ?></small></span><form method="post" action="<?= e(url('logout')) ?>"><input type="hidden" name="csrf" value="<?= e(Security::token()) ?>"><button class="secondary">Salir</button></form></div></header>
 <?php endif ?>
 <main id="main" tabindex="-1"><?php if(!empty($_SESSION['flash'])): ?><div class="notice" role="status"><?= e($_SESSION['flash']) ?></div><?php unset($_SESSION['flash']);endif ?><?= $content ?></main>
-<?php if(!empty($user)): ?><footer class="page-footer">SIPE V2 · DEMO local · Sistema Independiente de Préstamos Estudiantiles <span><?= e(date('d/m/Y')) ?></span></footer></div><?php endif ?>
+<?php if(!empty($user)): ?><footer class="page-footer">SIPE V2 · Sistema Independiente de Préstamos Estudiantiles <span><?= e(date('d/m/Y')) ?></span></footer></div><?php endif ?>
 </body></html>

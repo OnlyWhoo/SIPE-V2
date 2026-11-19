@@ -3,18 +3,27 @@ declare(strict_types=1);
 namespace Sipe\Controllers;
 use Sipe\Models\Database as DB;
 use Sipe\Middleware\Security as S;
-use Sipe\Services\{Workflow,LoanPolicy,Lending,Audit};
+use Sipe\Services\{Workflow,LoanPolicy,Lending,Audit,SearchFilters};
 final class WorkflowController
 {
     public function handle(string $route,array $user,bool $post): void {
         $categories=DB::all('SELECT id,nombre FROM categorias_recursos WHERE activo=1 ORDER BY nombre');
         $data=compact('user','route','categories');
         if($route==='requests'){
+            if($post && ($_POST['action']??'')==='search'){
+                SearchFilters::submit('requests',\url('requests'),['q','from','to','categoria','estado']);
+            }
             if($post){if(($_POST['action']??'')==='approve'){Lending::approve(S::id($_POST['id']??0),S::text($_POST['reason']??'',1000),$user);$_SESSION['flash']='Solicitud aprobada y reserva confirmada.';}elseif(($_POST['action']??'')==='cancel'){Lending::cancel(S::id($_POST['id']??0));$_SESSION['flash']='Solicitud cancelada. El historial se conserva.';}else{throw new \DomainException('Acción inválida.');}\redirect('requests');}
-            $data+=Workflow::movements($_GET);$data['title']='Solicitudes y préstamos';
+            $data+=Workflow::movements(SearchFilters::apply('requests'));$data['title']='Solicitudes y préstamos';
         }elseif($route==='borrower'){
-            $identity=S::text($_GET['identity']??'',64,false);$student=$identity===''?null:Workflow::student($identity);
             $history=($_GET['mode']??'')==='history';$groups=LoanPolicy::groups();$type=S::text($_GET['tipo_prestamo']??'',10,false);
+            if($post){
+                $matched=Workflow::student(S::text($_POST['identity']??'',64));
+                header('Location: '.\url('borrower').'&person='.$matched['id'].($history?'&mode=history':''),true,303);return;
+            }
+            $identity=S::text($_GET['identity']??'',64,false);
+            $student=isset($_GET['person'])?Workflow::byId(S::id($_GET['person'])):($identity===''?null:Workflow::student($identity));
+            $identity=$student['codigo_estudiante']??$identity;
             $sanctions=$student?DB::all('SELECT tipo,motivo,estado,fecha_registro FROM sanciones WHERE estudiante_id=? ORDER BY id DESC LIMIT 30',[$student['id']]):[];
             $data+=compact('identity','student','history','groups','type','sanctions');$data['title']=$history?'Hoja de Vida del Estudiante':'Identificación del prestatario';
         }elseif($route==='resources' || $route==='confirm'){
@@ -34,7 +43,7 @@ final class WorkflowController
             if($route==='confirm'){
                 if(!$post || !$resource){throw new \DomainException('Selecciona un recurso y revisa el resumen.');}
                 if(in_array($in['action']??'',['reserve','lend'],true)){
-                    if($in['action']==='reserve'){Lending::reserve($in,(int)$user['id']);$_SESSION['flash']='Solicitud registrada. Revisa su estado en el panel; egresados y administrativos requieren aprobación manual.';}
+                    if($in['action']==='reserve'){Lending::reserve($in,(int)$user['id']);$_SESSION['flash']='Solicitud registrada. Revisa su estado en el panel; docentes, egresados y administrativos requieren aprobación manual.';}
                     else{
                         $start=strtotime($in['inicio']);
                         if(abs(time()-$start)>300){throw new \DomainException('La entrega es inmediata. Ajusta el inicio a la hora actual o registra una reserva.');}

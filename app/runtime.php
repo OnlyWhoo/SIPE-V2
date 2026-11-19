@@ -22,15 +22,21 @@ try {
     $base=rtrim($config['base_path'],'/');\Sipe\Installation\Local::protection($base);
     $private=\Sipe\Installation\Local::privateDirectory();ini_set('error_log',$private.'/php-error.log');
     $configFile=$private.'/local.php';if(is_file($configFile)){$config=require $configFile;$config['base_path']=$base;}
+    $migrationLock=fopen($private.'/migration.lock','c');
+    if(!$migrationLock||!flock($migrationLock,LOCK_SH|LOCK_NB)){throw new RuntimeException('La actualización de SIPE V2 está en curso. Vuelve a abrir la aplicación al finalizar.');}
     $sessions=$private.'/sessions';if(!is_dir($sessions)&&!mkdir($sessions,0700,true)){throw new RuntimeException('No se pudo crear el almacenamiento privado de sesiones.');}
     ini_set('session.use_strict_mode','1');ini_set('session.use_only_cookies','1');
-    session_name('SIPEV2_'.substr(hash('sha256',ROOT),0,12));session_save_path($sessions);
+    $sessionScope=ROOT.(($config['demo_local']??false)?'':($config['plan']??'setup'));
+    session_name('SIPEV2_'.substr(hash('sha256',$sessionScope),0,12));session_save_path($sessions);
     session_set_cookie_params(['httponly'=>true,'secure'=>$config['secure_cookie'],'samesite'=>'Lax','path'=>$base.'/']);session_start();
     if(!is_file($configFile)){require ROOT.'/app/setup.php';exit;}
-    if(($config['demo_local']??false)!==true){throw new RuntimeException('Esta edición solo admite modo DEMO local. Para uso real se requiere una edición y credenciales revisadas.');}
-    $db=\Sipe\Models\Database::get();$marker=$db->query('SELECT owner,plan,phase FROM sipe_v2_installation WHERE id=1')->fetch();$digest=hash_file('sha256',ROOT.'/database/install-plan.json');
+    $db=\Sipe\Models\Database::get();$marker=$db->query('SELECT owner,plan,phase FROM sipe_v2_installation WHERE id=1')->fetch();
+    $legacy=($config['demo_local']??false)===true;
+    $planFile=ROOT.'/database/'.($legacy?'install-plan.json':'entrega-plan.json');
+    $digest=hash_file('sha256',$planFile);
     if(!$marker||$marker['phase']!=='ready'||!hash_equals($config['owner']??'',$marker['owner'])||!hash_equals($config['plan']??'',$marker['plan'])||!hash_equals($digest,$marker['plan'])){throw new RuntimeException('El marcador de instalación no coincide. Conserva los datos y solicita revisión técnica.');}
-    if(($_SESSION['schema_verified']??'')!==$digest){$plan=json_decode((string)file_get_contents(ROOT.'/database/install-plan.json'),true,512,JSON_THROW_ON_ERROR);\Sipe\Installation\Schema::verify($db,(string)$db->query('SELECT DATABASE()')->fetchColumn(),$plan);$_SESSION['schema_verified']=$digest;}
+    if(($_SESSION['schema_verified']??'')!==$digest){$plan=json_decode((string)file_get_contents($planFile),true,512,JSON_THROW_ON_ERROR);\Sipe\Installation\Schema::verify($db,(string)$db->query('SELECT DATABASE()')->fetchColumn(),$plan);$_SESSION['schema_verified']=$digest;}
+    $config['profiles']=!$legacy;
 }catch(Throwable $error){
     http_response_code(503);$message=$error instanceof PDOException?'No se puede conectar a la base configurada. Inicia MySQL/MariaDB y verifica la configuración privada. No se reinstala ni se cambian datos.':$error->getMessage();
     if(isset($private)){error_log('SIPE V2 bootstrap: '.get_class($error));}

@@ -1,9 +1,11 @@
 <?php
 declare(strict_types=1);
-// Creates only synthetic sipe_test_* databases in the dedicated localhost lab.
-$root=dirname(__DIR__);$admin=require $root.'/config/admin.local.php';
-if(!str_contains($admin['dsn'],'host=127.0.0.1;port=3312;')){throw new RuntimeException('Use only the isolated localhost lab on 3312.');}
-$pdo=new PDO($admin['dsn'],$admin['user'],$admin['password'],[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
+// Creates synthetic sipe_test_* databases on the localhost XAMPP server.
+$root=dirname(__DIR__);
+$adminDsn='mysql:host=127.0.0.1;port=3306;charset=utf8mb4';
+$adminUserName=getenv('SIPE_TEST_DB_USER')?:'root';
+$adminPassword=getenv('SIPE_TEST_DB_PASSWORD')?:'';
+$pdo=new PDO($adminDsn,$adminUserName,$adminPassword,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
 $name='sipe_test_'.date('YmdHis').'_'.bin2hex(random_bytes(3));
 $pdo->exec('CREATE DATABASE `'.$name.'` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');$pdo->exec('USE `'.$name.'`');$pdo->exec(file_get_contents($root.'/database/schema.sql'));$pdo->exec("INSERT INTO roles(id,nombre) VALUES(1,'ADMINISTRADOR'),(2,'EMPLEADO'); INSERT INTO configuraciones(clave,valor) VALUES('hora_limite_interno','20:00')");
 // Reproducir los permisos de install-local.php; root solo prepara el esquema.
@@ -11,10 +13,10 @@ $testUser='sipe_test_'.bin2hex(random_bytes(6));$testPassword=bin2hex(random_byt
 $account=$pdo->quote($testUser)."@'127.0.0.1'";
 $pdo->exec("CREATE USER $account IDENTIFIED BY ".$pdo->quote($testPassword));
 $pdo->exec("GRANT SELECT ON $name.* TO $account");
-foreach(['usuarios','programas_academicos','estudiantes','categorias_recursos','recursos','autorizaciones_programa_categoria','reservas','prestamos','devoluciones','inspecciones','sanciones','configuraciones'] as $table){$pdo->exec("GRANT INSERT, UPDATE ON $name.$table TO $account");}
+foreach(['usuarios','programas_academicos','estudiantes','fotografias_prestatarios','categorias_recursos','recursos','autorizaciones_programa_categoria','reservas','prestamos','devoluciones','inspecciones','sanciones','configuraciones'] as $table){$pdo->exec("GRANT INSERT, UPDATE ON $name.$table TO $account");}
 $pdo->exec("GRANT INSERT ON $name.auditoria TO $account");
 $pdo->exec("GRANT DELETE ON $name.autorizaciones_programa_categoria TO $account");
-$config=require $root.'/config/example.php';$config['dsn']='mysql:host=127.0.0.1;port=3312;dbname='.$name.';charset=utf8mb4';$config['user']=$testUser;$config['password']=$testPassword;
+$config=require $root.'/config/example.php';$config['dsn']='mysql:host=127.0.0.1;port=3306;dbname='.$name.';charset=utf8mb4';$config['user']=$testUser;$config['password']=$testPassword;
 file_put_contents($root.'/var/test-config.php',"<?php\nreturn ".var_export($config,true).";\n");putenv('SIPE_CONFIG='.$root.'/var/test-config.php');
 require $root.'/app/bootstrap.php';
 use Sipe\Models\Database as DB;

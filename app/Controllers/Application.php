@@ -4,7 +4,7 @@ namespace Sipe\Controllers;
 use Sipe\Models\Database as DB;
 use Sipe\Models\Catalog;
 use Sipe\Middleware\Security as S;
-use Sipe\Services\{Auth,Audit,CatalogService,Lending,Administration};
+use Sipe\Services\{Auth,Audit,CatalogService,Lending,Administration,Profiles,Workflow,SearchFilters};
 final class Application
 {
     public function handle(string $route): void {
@@ -25,7 +25,9 @@ final class Application
             (new WorkflowController())->handle('requests',$user,false);return;
         }
         if($route==='reports'){
-            S::admin($user);$data=\Sipe\Services\Reports::query($_GET);$categories=DB::all('SELECT id,nombre FROM categorias_recursos ORDER BY nombre');
+            S::admin($user);
+            if($post){SearchFilters::submit('reports',\url('reports'),['report','identity','from','to','categoria']);}
+            $data=\Sipe\Services\Reports::query(SearchFilters::apply('reports'));$categories=DB::all('SELECT id,nombre FROM categorias_recursos ORDER BY nombre');
             \view('report-center',$data+compact('user','categories')+['title'=>'Reportes de Recursos']);return;
         }
         if($route==='logout'){if(!$post){throw new \DomainException('Usa el botón de cierre de sesión.',405);}Audit::record('CIERRE_SESION','usuarios',(int)$user['id']);Auth::logout();\redirect('login');}
@@ -38,25 +40,52 @@ final class Application
             $table=S::text($_GET['table']??'estudiantes',40);$def=Catalog::definition($table);
             if($table==='usuarios'){S::admin($user);}
             if($post){
-                if(($_POST['action']??'')==='toggle'){CatalogService::toggle($table,S::id($_POST['id']??0),$user);}else{CatalogService::save($table,$_POST,$user);}$_SESSION['flash']='Registro actualizado correctamente.';header('Location: '.\url('catalog').'&table='.rawurlencode($table),true,303);exit;
+                if(($_POST['action']??'')==='search'){
+                    SearchFilters::submit('catalog:'.$table,\url('catalog').'&table='.rawurlencode($table),['q']);
+                }
+                if(($_POST['action']??'')==='toggle'){
+                    CatalogService::toggle($table,S::id($_POST['id']??0),$user);
+                }else{
+                    $profile=array_intersect_key($_POST,['cedula'=>true,'carnet_vigencia'=>true]);
+                    if(isset($_FILES['fotografia'])){$profile['fotografia']=$_FILES['fotografia'];}
+                    CatalogService::save($table,$_POST,$user,$profile);
+                }
+                $_SESSION['flash']='Registro actualizado correctamente.';header('Location: '.\url('catalog').'&table='.rawurlencode($table),true,303);exit;
             }
-            $query=S::text($_GET['q']??'',150,false);$search=array_key_first($def['fields']);$params=[];$where='';
+            $filters=SearchFilters::apply('catalog:'.$table);
+            $query=S::text($filters['q']??'',150,false);$search=array_key_first($def['fields']);$params=[];$where='';
+            $pagination=isset($filters['filter'])?'&filter='.rawurlencode(S::text($filters['filter'],32,false)):
+                ($query!==''?'&q='.rawurlencode($query):'');
             if($query!==''){$where=" WHERE $search LIKE ?";$params[]='%'.$query.'%';}
             $page=max(1,min(100000,(int)($_GET['page']??1)));$offset=($page-1)*50;
             $cols=implode(',',array_filter(array_keys($def['fields']),fn($f)=>$f!=='password'));
             $rows=DB::all("SELECT id,activo,$cols FROM $table$where ORDER BY id DESC LIMIT 50 OFFSET $offset",$params);
-            $edit=null;if(isset($_GET['edit'])){if($table!=='estudiantes'){S::admin($user);}$edit=DB::one("SELECT id,activo,$cols FROM $table WHERE id=?",[S::id($_GET['edit'])]);}
-            \view('catalog',compact('user','table','def','rows','edit','query','page')+['title'=>$def['title']]);return;
+            $profileEditor=$table==='estudiantes' && $user['rol']==='ADMINISTRADOR' && Profiles::enabled();
+            $extra=$profileEditor?',cedula,carnet_vigencia':'';
+            $edit=null;if(isset($_GET['edit'])){if($table!=='estudiantes'){S::admin($user);}$edit=DB::one("SELECT id,activo,$cols$extra FROM $table WHERE id=?",[S::id($_GET['edit'])]);}
+            \view('catalog',compact('user','table','def','rows','edit','query','page','profileEditor','pagination')+['title'=>$def['title']]);return;
         }
+        if($route==='photo' && Profiles::enabled()){Profiles::servePhoto(S::id($_GET['id']??0));return;}
         if($route==='student' || $route==='qr'){
-            if(isset($_GET['token'])){$student=DB::one('SELECT e.*,p.nombre AS programa FROM estudiantes e LEFT JOIN programas_academicos p ON p.id=e.programa_id WHERE e.qr_token=?',[S::text($_GET['token'],64)]);}else{$student=DB::one('SELECT e.*,p.nombre AS programa FROM estudiantes e LEFT JOIN programas_academicos p ON p.id=e.programa_id WHERE e.id=?',[S::id($_GET['id']??0)]);}
-            if(!$student){throw new \DomainException('Estudiante no encontrado.',404);}
+            $student=isset($_GET['token'])?Workflow::byToken(S::text($_GET['token'],64)):Workflow::byId(S::id($_GET['id']??0));
             if($route==='qr'){
                 require ROOT.'/vendor/autoload.php';$renderer=new \BaconQrCode\Renderer\ImageRenderer(new \BaconQrCode\Renderer\RendererStyle\RendererStyle(280),new \BaconQrCode\Renderer\Image\SvgImageBackEnd());
                 header('Content-Type: image/svg+xml');echo (new \BaconQrCode\Writer($renderer))->writeString($student['qr_token']);return;
             }
-            Audit::record('CONSULTAR_HOJA','estudiantes',(int)$student['id']);$rows=DB::all('SELECT p.id,r.nombre AS recurso,p.fecha_entrega,p.fecha_limite,p.estado FROM prestamos p JOIN recursos r ON r.id=p.recurso_id WHERE p.estudiante_id=? ORDER BY p.id DESC LIMIT 100',[$student['id']]);
-            $sanctions=DB::all('SELECT tipo,motivo,estado,fecha_registro FROM sanciones WHERE estudiante_id=? ORDER BY id DESC LIMIT 100',[$student['id']]);$allowed=DB::all('SELECT c.nombre FROM autorizaciones_programa_categoria a JOIN categorias_recursos c ON c.id=a.categoria_id WHERE a.programa_id=? AND c.activo=1',[$student['programa_id']]);\view('student',compact('user','student','rows','allowed','sanctions')+['title'=>'Hoja de Estudiante']);return;
+            Audit::record('CONSULTAR_HOJA','estudiantes',(int)$student['id']);
+            $id=$student['id'];
+            $rows=DB::all("SELECT CONCAT('P',p.id) AS id,r.nombre AS recurso,p.fecha_entrega AS inicio,p.fecha_limite AS limite,
+                CASE WHEN d.fecha_devolucion IS NOT NULL THEN CONCAT(p.estado,' · ',DATE_FORMAT(d.fecha_devolucion,'%d/%m/%Y %H:%i')) ELSE p.estado END AS estado
+                FROM prestamos p JOIN recursos r ON r.id=p.recurso_id LEFT JOIN devoluciones d ON d.prestamo_id=p.id
+                WHERE p.estudiante_id=?
+                UNION ALL
+                SELECT CONCAT('R',q.id),r.nombre,q.inicio,q.fin,q.estado FROM reservas q JOIN recursos r ON r.id=q.recurso_id
+                WHERE q.estudiante_id=? ORDER BY inicio DESC LIMIT 100",[$id,$id]);
+            $totals=DB::one("SELECT
+                (SELECT COUNT(*) FROM prestamos WHERE estudiante_id=? AND estado='ACTIVO') AS activos,
+                (SELECT COUNT(*) FROM reservas WHERE estudiante_id=? AND estado IN ('CONFIRMADA','PENDIENTE_APROBACION') AND fin>NOW()) AS reservas,
+                (SELECT COUNT(*) FROM devoluciones d JOIN prestamos p ON p.id=d.prestamo_id WHERE p.estudiante_id=?) AS devoluciones",[$id,$id,$id]);
+            $sanctions=DB::all('SELECT tipo,motivo,estado,fecha_registro FROM sanciones WHERE estudiante_id=? ORDER BY id DESC LIMIT 100',[$id]);$allowed=DB::all('SELECT c.nombre FROM autorizaciones_programa_categoria a JOIN categorias_recursos c ON c.id=a.categoria_id WHERE a.programa_id=? AND c.activo=1',[$student['programa_id']]);\view('student',compact('user','student','rows','allowed','sanctions','totals')+['title'=>'Hoja de Estudiante']);return;
         }
         if($route==='scan'){
             if($post){$student=\Sipe\Services\Workflow::student(S::text($_POST['token']??'',64));header('Location: '.\url('student').'&id='.$student['id'],true,303);exit;}

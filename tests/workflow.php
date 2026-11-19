@@ -40,7 +40,7 @@ test('entrega efectiva con responsable y hora',fn()=>expect((int)DB::one('SELECT
 test('préstamo activo ocupa hasta devolución real',function()use($resource){$slots=Workflow::availability($resource,'2099-05-02');expect(str_starts_with($slots[0]['estado'],'Prestado'));});
 test('vale externo usa registro persistido',function()use($loan,$employee){$v=Workflow::voucher($loan);expect($v['tipo_prestamo']==='EXTERNO' && (int)$v['entregado_por']===$employee['id']);});
 test('devolución efectiva actualiza inventario',function()use($loan,$resource,$employee){Lending::returnLoan(['prestamo_id'=>$loan,'estado_fisico'=>'BUENO','apto'=>'1'],$employee['id']);expect(DB::one('SELECT estado_operativo FROM recursos WHERE id=?',[$resource])['estado_operativo']==='DISPONIBLE');});
-foreach(['EGRESADO','ADMINISTRATIVO'] as $group){
+foreach(['EGRESADO','ADMINISTRATIVO','DOCENTE'] as $group){
     $person=CatalogService::save('estudiantes',['codigo_estudiante'=>'FLOW-'.$group.'-'.bin2hex(random_bytes(4)),'tipo_persona'=>$group,'nombres'=>'Persona sintética','apellidos'=>'de pruebas','programa_id'=>'','correo'=>''],$admin);
     $request=$in;$request['estudiante_id']=$person;$request['grupo_trabajo']=$group;$request['inicio']=date('Y-m-d\TH:i');$request['fin']=date('Y-m-d\TH:i',time()+3600);
     $pending=Lending::reserve($request,$employee['id']);

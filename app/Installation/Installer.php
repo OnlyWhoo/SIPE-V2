@@ -7,8 +7,6 @@ use RuntimeException;
 
 final class Installer
 {
-    public const DEMO_EMAIL='profesor@sipe.local';
-    public const DEMO_PASSWORD='Sipe2026!';
     private array $plan;
     private string $digest;
     public function __construct(private string $private,private string $planPath) {
@@ -18,7 +16,7 @@ final class Installer
     public static function parameters(array $input): array {
         foreach(['host','port','database','user','password'] as $key){if(isset($input[$key])&&!is_string($input[$key])){throw new RuntimeException('Formato de conexión inválido.');}}
         $host=$input['host']??'127.0.0.1';$port=$input['port']??'3306';$database=$input['database']??'sipe_v2';
-        if(!in_array($host,['127.0.0.1','localhost','::1'],true)||!ctype_digit($port)||(int)$port<1||(int)$port>65535){throw new RuntimeException('Usa un servidor local y su puerto MySQL válido.');}
+        if(!in_array($host,['127.0.0.1','localhost','::1'],true)||!ctype_digit($port)||(int)$port<1||(int)$port>65535||(int)$port===3307){throw new RuntimeException('Usa el servidor local de XAMPP y su puerto MySQL configurado (3306 de forma predeterminada).');}
         if(!preg_match('/\Asipe_v2(?:_[a-zA-Z0-9]+)*\z/D',$database)||strlen($database)>64){throw new RuntimeException('Elige sipe_v2 o un nombre nuevo que comience por sipe_v2_. Nunca se utiliza la base sipe original.');}
         $user=$input['user']??'root';if($user===''||strlen($user)>80||strlen($input['password']??'')>1024){throw new RuntimeException('Revisa la cuenta MySQL.');}
         return ['host'=>$host,'port'=>$port,'database'=>$database,'user'=>$user,'password'=>$input['password']??''];
@@ -45,7 +43,11 @@ final class Installer
         // CLI-only fault injection for repeatable interrupted-installation tests.
         if(PHP_SAPI==='cli' && getenv('SIPE_V2_TEST_FAIL_AT')===$name){throw new RuntimeException('Synthetic interruption: '.$name);}
     }
-    public function install(array $input,string $base): array {
+    public function install(array $input,string $base,array $admin): array {
+        $dataDirectory=dirname($this->planPath);
+        $privatePath=$dataDirectory.'/entrega-privada.json';
+        $data=is_file($privatePath)?Entrega::read($privatePath):null;
+        $catalog=$data===null?['programas'=>[],'recursos'=>[]]:Entrega::read($dataDirectory.'/inventario-entrega.json');
         $p=self::parameters($input);$file=@fopen($this->private.'/installation.lock','c');
         if(!$file||!flock($file,LOCK_EX)){throw new RuntimeException('No se pudo bloquear la instalación local.');}
         $pdo=null;$locked=false;$lock='sipe-v2:'.substr(hash('sha256',$p['database']),0,48);
@@ -86,12 +88,20 @@ final class Installer
                 $pdo->beginTransaction();
                 try{
                     foreach(array_keys($this->plan['tables']) as $table){if((int)$pdo->query('SELECT COUNT(*) FROM `'.$table.'`')->fetchColumn()!==0){throw new RuntimeException('Una instalación pendiente contiene datos inesperados. No se sobrescriben.');}}
-                    Demo::seed($pdo);$this->checkpoint('seed');
+                    Entrega::seed($pdo,$admin,$catalog,$data);$this->checkpoint('seed');
                     $pdo->exec("UPDATE sipe_v2_installation SET phase='ready' WHERE id=1");$pdo->commit();
                 }catch(\Throwable $e){if($pdo->inTransaction()){$pdo->rollBack();}throw $e;}
             }elseif($marker['phase']!=='ready'){throw new RuntimeException('Estado de instalación desconocido.');}
+            else{
+                $check=$pdo->prepare('SELECT password_hash FROM usuarios WHERE correo=? AND activo=1');
+                $check->execute([$admin['correo']]);
+                $hash=$check->fetchColumn();
+                if($hash===false||(!hash_equals($hash,$admin['hash'])&&!password_verify($admin['password']??'',$hash))){
+                    throw new RuntimeException('Para reanudar, utiliza la misma cuenta de SIPE V2 que elegiste al iniciar.');
+                }
+            }
             $this->checkpoint('configured');
-            $settings=['dsn'=>'mysql:host='.$p['host'].';port='.$p['port'].';dbname='.$p['database'].';charset=utf8mb4','user'=>$p['user'],'password'=>$p['password'],'base_path'=>$base,'secure_cookie'=>!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off','session_timeout'=>1800,'demo_local'=>true,'owner'=>$state['owner'],'plan'=>$this->digest];
+            $settings=['dsn'=>'mysql:host='.$p['host'].';port='.$p['port'].';dbname='.$p['database'].';charset=utf8mb4','user'=>$p['user'],'password'=>$p['password'],'base_path'=>$base,'secure_cookie'=>!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off','session_timeout'=>1800,'owner'=>$state['owner'],'plan'=>$this->digest];
             Local::write($this->private.'/local.php',"<?php\nreturn ".var_export($settings,true).";\n");
             return $settings;
         }finally{if($pdo&&$locked){$q=$pdo->prepare('SELECT RELEASE_LOCK(?)');$q->execute([$lock]);}flock($file,LOCK_UN);fclose($file);}

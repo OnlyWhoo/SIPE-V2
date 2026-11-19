@@ -11,7 +11,7 @@ final class LoanPolicy
         return $value;
     }
     public static function groups(): array {
-        return ['ESTUDIANTE','EGRESADO','ADMINISTRATIVO'];
+        return ['ESTUDIANTE','EGRESADO','ADMINISTRATIVO','DOCENTE'];
     }
     public static function options(array $in): array {
         $type=S::text($in['tipo_prestamo']??'',10);

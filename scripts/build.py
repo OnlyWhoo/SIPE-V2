@@ -1,24 +1,59 @@
-"""Build the academic distribution with an explicit allowlist; Python is development-only."""
+"""Construye el ZIP privado con los datos autorizados desde una carpeta externa a htdocs."""
+
+import argparse
+from hashlib import sha256
 from pathlib import Path
-import zipfile,hashlib
-root=Path(__file__).resolve().parents[1];dist=root/'dist';dist.mkdir(exist_ok=True)
-files=[]
-for folder in ['app','assets','public','config','database','vendor','docs']:
-    files.extend(p for p in (root/folder).rglob('*') if p.is_file() and not p.name.endswith('.local.php') and p.name!='local.php')
-for name in ['index.php','.htaccess','README.md','LEEME-PRIMERO.txt','composer.json','composer.lock','var/protection-check.txt']:
-    files.append(root/name)
-files=[p for p in sorted(set(files)) if p.name!='SHA256SUMS.txt']
-for p in files:
-    rel=p.relative_to(root).as_posix()
-    assert not any(part in rel for part in ['.git/','/sessions/','backup','admin.local','test-config','php-error','.env'])
-manifest=root/'docs/SHA256SUMS.txt'
-manifest.write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.relative_to(root).as_posix()+'\n' for p in files),encoding='utf-8');files.append(manifest)
-archive=dist/'SIPE-V2-ENTREGA-FINAL.zip'
-with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED,compresslevel=9) as z:
-    for p in files:z.write(p,'SIPE-V2/'+p.relative_to(root).as_posix())
-with zipfile.ZipFile(archive) as z:
-    assert z.testzip() is None
-    for p in files:assert z.read('SIPE-V2/'+p.relative_to(root).as_posix())==p.read_bytes()
-digest=hashlib.sha256(archive.read_bytes()).hexdigest()
-(dist/(archive.name+'.sha256')).write_text(digest+'  '+archive.name+'\n')
-print(archive);print('bytes',archive.stat().st_size);print('SHA256',digest)
+from zipfile import ZIP_DEFLATED, ZipFile
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("private", type=Path)
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parents[1]
+    private = args.private.resolve(strict=True)
+    if private.is_relative_to(root.parent):
+        raise SystemExit("La carpeta de entrega privada debe quedar fuera de htdocs.")
+    files = {}
+    for directory in ("app", "assets", "public", "vendor"):
+        for file in (root / directory).rglob("*"):
+            if file.is_file() and ".git" not in file.relative_to(root).parts:
+                files[file.relative_to(root).as_posix()] = file
+    for name in (
+        "index.php", ".htaccess", "README.md", "LEEME-PRIMERO.txt", "composer.json", "composer.lock",
+        "config/example.php", "database/install-plan.json", "database/entrega-plan.json", "database/schema.sql",
+        "docs/PRUEBAS.md", "config/protection-check.txt", "database/protection-check.txt",
+        "docs/protection-check.txt", "var/protection-check.txt",
+    ):
+        files[name] = root / name
+    for name in ("entrega-privada.json", "inventario-entrega.json", "arranque-privado.json"):
+        files["database/" + name] = private / name
+
+    destination = private / "SIPE-V2-ENTREGA-ACADEMICA-PRIVADA.zip"
+    temporary = destination.with_suffix(".tmp")
+    hashes = {}
+    try:
+        with ZipFile(temporary,"w",ZIP_DEFLATED,compresslevel=9) as archive:
+            for name, file in sorted(files.items()):
+                content = file.read_bytes()
+                hashes[name] = sha256(content).hexdigest()
+                archive.writestr("SIPE-V2/" + name, content)
+            manifest = "".join(f"{digest}  {name}\n" for name, digest in hashes.items())
+            archive.writestr("SIPE-V2/docs/SHA256SUMS.txt", manifest)
+        with ZipFile(temporary) as archive:
+            if archive.testzip() or any(
+                sha256(archive.read("SIPE-V2/" + name)).hexdigest() != digest
+                for name, digest in hashes.items()
+            ):
+                raise RuntimeError("El contenido del ZIP difiere del origen.")
+        temporary.replace(destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+    digest = sha256(destination.read_bytes()).hexdigest()
+    destination.with_suffix(".zip.sha256").write_text(f"{digest}  {destination.name}\n", encoding="ascii")
+    print(destination)
+    print(f"SHA-256 {digest}")
+
+
+if __name__ == "__main__":
+    main()

@@ -12,7 +12,7 @@ final class Local
         return (bool)preg_match('/\A(?:localhost|127\.0\.0\.1|\[::1\])(?::[0-9]{1,5})?\z/D',$host);
     }
     public static function guard(): void {
-        if(!self::allowed($_SERVER)){http_response_code(403);exit('SIPE V2 es una edición DEMO exclusiva de localhost, sin acceso remoto ni mediante proxies.');}
+        if(!self::allowed($_SERVER)){http_response_code(403);exit('Abre SIPE V2 directamente desde localhost.');}
         $site=$_SERVER['HTTP_SEC_FETCH_SITE']??'none';
         if(!in_array($site,['none','same-origin'],true)){http_response_code(403);exit('Abre SIPE V2 directamente desde localhost.');}
         $origin=$_SERVER['HTTP_ORIGIN']??null;

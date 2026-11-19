@@ -1,5 +1,5 @@
--- SIPE V2: esquema consolidado, migraciones 001 y 002 integradas.
--- Referencia técnica. La instalación web usa install-plan.json, sin importación manual.
+-- SIPE V2: esquema consolidado, migraciones 001 a 003 integradas.
+-- Referencia t?cnica. La instalaci?n web usa entrega-plan.json.
 CREATE TABLE `roles` (
   `id` tinyint(3) unsigned NOT NULL AUTO_INCREMENT,
   `nombre` varchar(40) NOT NULL,
@@ -48,11 +48,17 @@ CREATE TABLE `estudiantes` (
   `activo` tinyint(1) NOT NULL DEFAULT 1,
   `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
   `actualizado_en` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `tipo_persona` enum('ESTUDIANTE','EGRESADO','ADMINISTRATIVO') NOT NULL DEFAULT 'ESTUDIANTE',
+  `tipo_persona` enum('ESTUDIANTE','EGRESADO','ADMINISTRATIVO','DOCENTE') NOT NULL DEFAULT 'ESTUDIANTE',
+  `cedula` varchar(40) DEFAULT NULL,
+  `carnet_vigencia` date DEFAULT NULL,
+  `carnet_origen` varchar(32) DEFAULT NULL,
+  `clasificacion_pendiente` tinyint(1) NOT NULL DEFAULT 0,
+  `programa_provisional` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `codigo_estudiante` (`codigo_estudiante`),
   UNIQUE KEY `qr_token` (`qr_token`),
   UNIQUE KEY `correo` (`correo`),
+  UNIQUE KEY `uq_estudiantes_cedula` (`cedula`),
   KEY `programa_id` (`programa_id`),
   CONSTRAINT `estudiantes_ibfk_1` FOREIGN KEY (`programa_id`) REFERENCES `programas_academicos` (`id`),
   CONSTRAINT `estudiantes_check_1` CHECK (`activo` in (0,1))
@@ -73,7 +79,7 @@ CREATE TABLE `recursos` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `categoria_id` bigint(20) unsigned NOT NULL,
   `codigo_inventario` varchar(50) NOT NULL,
-  `nombre` varchar(150) NOT NULL,
+  `nombre` varchar(255) NOT NULL,
   `descripcion` text DEFAULT NULL,
   `estado_fisico` enum('BUENO','REGULAR','DANADO') NOT NULL DEFAULT 'BUENO',
   `estado_operativo` enum('DISPONIBLE','PRESTADO','MANTENIMIENTO','BAJA') NOT NULL DEFAULT 'DISPONIBLE',
@@ -239,6 +245,15 @@ CREATE TABLE `configuraciones` (
   PRIMARY KEY (`clave`),
   KEY `actualizado_por` (`actualizado_por`),
   CONSTRAINT `configuraciones_ibfk_1` FOREIGN KEY (`actualizado_por`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `fotografias_prestatarios` (
+  `estudiante_id` bigint(20) unsigned NOT NULL,
+  `mime` varchar(30) NOT NULL,
+  `contenido` mediumblob NOT NULL,
+  `origen` enum('ILUSTRATIVA','ADMINISTRATIVA') NOT NULL,
+  PRIMARY KEY (`estudiante_id`),
+  CONSTRAINT `fk_foto_prestatario` FOREIGN KEY (`estudiante_id`) REFERENCES `estudiantes` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE SQL SECURITY INVOKER VIEW vw_prestamos_resumen AS select `p`.`id` AS `prestamo_id`,`e`.`codigo_estudiante` AS `codigo_estudiante`,concat(`e`.`nombres`,' ',`e`.`apellidos`) AS `estudiante`,`r`.`codigo_inventario` AS `codigo_inventario`,`r`.`nombre` AS `recurso`,`p`.`fecha_entrega` AS `fecha_entrega`,`p`.`fecha_limite` AS `fecha_limite`,`d`.`fecha_devolucion` AS `fecha_devolucion`,case when `p`.`estado` = 'ANULADO' then 'ANULADO' when `d`.`id` is not null then 'DEVUELTO' when current_timestamp() > `p`.`fecha_limite` then 'ATRASADO' else 'ACTIVO' end AS `situacion` from (((`prestamos` `p` join `estudiantes` `e` on(`e`.`id` = `p`.`estudiante_id`)) join `recursos` `r` on(`r`.`id` = `p`.`recurso_id`)) left join `devoluciones` `d` on(`d`.`prestamo_id` = `p`.`id`));

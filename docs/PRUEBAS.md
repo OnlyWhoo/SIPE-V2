@@ -1,42 +1,32 @@
-# Pruebas de SIPE V2 — 30 de octubre de 2026
+# Pruebas de SIPE V2
 
-Entorno ejecutado: Windows, PHP 8.2.12, Apache 2.4.58 y MariaDB 10.4.32, utilizando exclusivamente binarios ya existentes de XAMPP. Los procesos de laboratorio utilizaron configuración y datos nuevos dentro de var/runtime, con Apache en 127.0.0.1:8085 y MariaDB en 127.0.0.1:3312. No se registraron servicios ni se cambió configuración global de XAMPP.
+## Entorno y migración
 
-## Resultados
+Pruebas ejecutadas el 18 y 19 de noviembre de 2026 con Apache 2.4.65, PHP 8.3.36 y MariaDB 10.11.16 de XAMPP. Apache atendió localhost en el puerto 80 y MariaDB en el 3306. Las pruebas utilizaron bases aisladas en la misma instancia de XAMPP.
 
-- 117 archivos PHP de aplicación, entrada interna y dependencias: sin errores de sintaxis.
-- 17 pruebas unitarias: 0 fallos. Mantienen la política general de contraseñas, CSRF, roles y validaciones.
-- 37 pruebas de integración: 0 fallos. Autenticación, sesiones, permisos SQL limitados, administrador concurrente, catálogos, autorizaciones, reservas, préstamos, devoluciones, inspecciones, sanciones, auditoría y QR.
-- 37 pruebas de reglas y flujos: 0 fallos. Incluyen horario interno a las 20:00, externos con fecha/hora, disponibilidad y aprobaciones por solicitud para egresados y administrativos.
-- Dos pruebas de concurrencia: exactamente una aceptación y un rechazo por reserva y préstamo, sin filas duplicadas.
-- 12 comprobaciones del instalador: 0 fallos. Guard local, rechazo de parámetros peligrosos, base ajena intacta, cinco interrupciones deliberadas, propietario incorrecto, esquema divergente, conservación de identidades al cambiar el nombre pendiente y cuenta sin CREATE.
-- Las cinco interrupciones se provocaron tras crear el marcador, tras crear una tabla y antes de registrar su paso, con esquema completo, dentro de la transacción de DEMO y antes de guardar la configuración. Reanudar creó una sola cuenta, una reserva y dos préstamos; volver a instalar sobre la configuración completada fue rechazado.
-- Cuatro restricciones SQL comprobadas mediante escrituras inválidas reales y rollback: CHECK de activo, FK inexistente, CHECK de duración y préstamo activo duplicado.
+Antes de actualizar `sipe_v2` se restauró un respaldo fuera de la instalación activa y se compararon las sumas de sus 16 tablas. La migración pasó sobre la copia restaurada antes de aplicarse en la base activa. Los dos préstamos y la reserva precargados se identificaron como DEMO por sus marcas y referencias. Se retiraron de la base operativa siguiendo las claves foráneas y se conservaron en el respaldo. El administrador local de demostración recibió una credencial privada nueva. Se mantuvo su identificador de cuenta.
 
-## Prueba real del ZIP
+Se cotejaron los 123 prestatarios y los 150 recursos utilizables campo por campo. Se comprobó el código excluido, los ceros iniciales, el correo derivado, los roles, los siete programas, 123 QR únicos, 123 fotos con contenido distinto, la vigencia en DATE y las marcas internas. Las 11 referencias truncadas quedaron pendientes. La ampliación del nombre de recurso a 255 caracteres conservó tres nombres de hasta 233 caracteres.
 
-Se construyó el ZIP y se extrajo en carpetas nuevas de htdocs del Apache aislado. La aplicación extraída usó únicamente su propio código y dependencias; no carga archivos del proyecto original ni del árbol de desarrollo. Playwright y Edge ya disponibles se utilizaron solamente para automatizar las pruebas, no forman parte de la aplicación ni se requieren en destino.
+`mysqlcheck` devolvió OK para las 17 tablas activas. Después de un reinicio de MariaDB se volvió a comprobar el padrón, incluidos los mismos QR y fotos. El primer arranque del reinicio coincidió con el cierre del proceso anterior y se recuperó repitiendo el inicio una vez liberado InnoDB.
 
-Se completaron 18 comprobaciones de navegador: asistente ante servidor protegido, rechazo de CSRF, origen ajeno y Host falso, rechazo de base ajena, explicación de permisos CREATE, instalación automática sin importar SQL, login DEMO exacto, todos los módulos, QR, protección real de archivos, bloqueo con AllowOverride None, reserva, cancelación, entrega externa, vale, devolución, reporte y logout sin reinstalación.
+## Regresión
 
-También se verificó la ruta totalmente automática: el primer GET de otra copia limpia creó esquema, datos y administrador, redirigió al login y permitió entrar y salir sin mostrar formulario. Para mantener el laboratorio aislado, sus valores iniciales fueron proporcionados mediante variables del Apache de pruebas y apuntaron a 3312. En una instalación normal sin esas variables, los valores incluidos siguen siendo 127.0.0.1:3306, root sin contraseña y sipe_v2. No se ejecutó una instalación nueva sobre el servidor original de 3306.
+| Comprobaciones | Correctas |
+| --- | ---: |
+| Unitarias | 17 |
+| Integración | 37 |
+| Flujos y reglas | 42 |
+| Concurrencia en reserva y préstamo | 2 |
+| Instalador | 12 |
+| HTTP en una extracción limpia del ZIP | 35 |
 
-Se reiniciaron únicamente los procesos aislados de Apache y MariaDB. Las 16 tablas de la instalación conservaron exactamente sus cantidades y hashes; persistieron la cuenta DEMO hasheada, el marcador y las operaciones web. Después del reinicio se verificaron login, movimientos, logout y ausencia del asistente. Las tablas internas global_priv, db y transaction_registry del laboratorio pasaron CHECK TABLE.
+Las pruebas cubrieron identificación por código y QR, hoja de vida, fotos protegidas y actualización de vigencia, solicitud y aprobación docente, autorización estudiantil, préstamo interno y externo, entrega, devolución, vales, reportes, auditoría, CSRF y permisos del empleado. Los casos de concurrencia verificaron una aceptación y un rechazo para cada operación simultánea.
 
-Se detectó durante el desarrollo que Referrer-Policy no-referrer hacía que Edge enviara Origin null en formularios. Se cambió a same-origin, conservando el rechazo de orígenes ajenos y los tokens CSRF. Las pruebas posteriores pasaron.
+La primera página de la copia extraída creó la base y abrió el inicio de sesión. Se ensayó también el asistente con credenciales MySQL rechazadas y se comprobó el rechazo de un nombre de base preexistente. Se validaron los archivos del ZIP con SHA-256.
 
-## Compatibilidad y límites
+Se tomaron capturas antes y después de las vistas editadas y se comprobó la distribución de paneles, formularios, botones y navegación. Las hojas de estilo y los archivos JavaScript conservaron su contenido. Se decodificó el QR mostrado en pantalla y se generó un PDF desde el navegador. El ensayo no utilizó una cámara o impresora física.
 
-La edición se comprobó en MariaDB 10.4.32, PHP 8.2.12 y Apache 2.4.58. MySQL 8.0.16+ se admite en el comprobador, pero **esta edición no se ejecutó sobre MySQL 8 y no se certifica su compatibilidad**. Tampoco se certifican otras versiones sin prueba.
+## Separación del proyecto original
 
-No se probaron cámara ni impresora físicas. Se verificaron QR SVG, identificación por token y vale imprimible. No se certifica despliegue remoto, HTTPS con certificados locales no confiables, proxies o servidores que impidan la comprobación HTTP de protección: esta edición falla de forma cerrada en esos casos.
-
-## Separación del original
-
-El código, configuración, repositorio y archivos de datos de Z:/SIPE se compararon con una copia de control: 1714 archivos idénticos mediante SHA256. MySQL original de 3307 no se inició ni se modificó. Los 191 archivos de los respaldos de recuperación examinados permanecen idénticos.
-
-En el MariaDB dañado de XAMPP no se ejecutaron restauraciones, reinicializaciones, reparaciones, DDL ni modificaciones de cuentas. Durante la comprobación final se observó que ya estaba activo un proceso ajeno al laboratorio en 3306, iniciado a las 22:49:11, antes de este trabajo. Su archivo mysql/db.MAD cambió de hash durante la sesión. No se atribuyó la causa, no se revirtió el archivo y no se detuvo ese proceso; **no se certifica inmutabilidad física de ese directorio activo**. Las primeras aperturas del asistente probaron la conexión local predeterminada; las ejecuciones finales de laboratorio dirigieron todos sus intentos iniciales a 3312. La recuperación de ese MariaDB sigue siendo una tarea independiente.
-
-## Referencias técnicas
-
-La reanudación considera los commits implícitos del DDL de MariaDB 10.4: [documentación oficial de DDL](https://mariadb.com/docs/server/reference/sql-statements/transactions/sql-statements-that-cause-an-implicit-commit). La cuenta DEMO utiliza [password_hash de PHP](https://www.php.net/password-hash). La instancia nueva de laboratorio se inicializó con la utilidad oficial de Windows [mysql_install_db / mariadb-install-db](https://mariadb.com/docs/server/server-management/install-and-upgrade-mariadb/installing-mariadb/installing-system-tables-mariadb-install-db/mariadb-install-db-exe), con directorio nuevo y sin registrar servicios.
+Los 1.714 archivos de `Z:/SIPE` coincidieron por SHA-256 con el control histórico disponible. Los datos personales, las fotografías asociadas, los tokens QR, las credenciales y los respaldos permanecen en el entorno autorizado de la entrega.

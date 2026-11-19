@@ -14,6 +14,6 @@ try {
     if(!$duplicate){error_log('Fallo de persistencia: '.get_class($ex).' código '.$ex->getCode());}
     view('error',['title'=>$duplicate?'Revisar datos':'Servicio no disponible','message'=>$duplicate?'El identificador ya existe o una relación no es válida. Revisa los datos.':'No se pudo completar la operación. Revisa la conexión y el estado de MySQL con el administrador.','user'=>null]);
 } catch (Throwable $ex) {
-    error_log(get_class($ex).': '.$ex->getMessage());http_response_code(503);
+    error_log('SIPE V2: '.get_class($ex));http_response_code(503);
     view('error',['title'=>'Servicio no disponible','message'=>'No se pudo completar la operación. Consulta al administrador.','user'=>null]);
 }

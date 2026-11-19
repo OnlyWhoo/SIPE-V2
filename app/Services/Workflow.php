@@ -7,13 +7,23 @@ final class Workflow
 {
     public static function student(string $identity): array {
         $identity=S::text($identity,64);
-        $s=DB::one('SELECT e.*,p.nombre AS programa,p.activo AS programa_activo FROM estudiantes e LEFT JOIN programas_academicos p ON p.id=e.programa_id WHERE e.codigo_estudiante=? OR e.qr_token=?',[$identity,$identity]);
+        $s=self::person('e.codigo_estudiante=? OR e.qr_token=?',[$identity,$identity]);
         if(!$s){throw new \DomainException('No se encontró un estudiante con ese código o QR.');}
         return $s;
     }
     public static function byId(int $id): array {
-        $s=DB::one('SELECT e.*,p.nombre AS programa,p.activo AS programa_activo FROM estudiantes e LEFT JOIN programas_academicos p ON p.id=e.programa_id WHERE e.id=?',[$id]);
+        $s=self::person('e.id=?',[$id]);
         if(!$s){throw new \DomainException('Estudiante no encontrado.',404);}return $s;
+    }
+    public static function byToken(string $token): array {
+        $student=self::person('e.qr_token=?',[S::text($token,64)]);
+        if(!$student){throw new \DomainException('Prestatario no encontrado.',404);}
+        return $student;
+    }
+    private static function person(string $condition,array $params): ?array {
+        return DB::one('SELECT e.*,p.nombre AS programa,p.activo AS programa_activo'.Profiles::select().
+            ' FROM estudiantes e LEFT JOIN programas_academicos p ON p.id=e.programa_id'.Profiles::join().
+            ' WHERE '.$condition,$params);
     }
     public static function date(string $day): string {
         $d=\DateTimeImmutable::createFromFormat('!Y-m-d',$day);

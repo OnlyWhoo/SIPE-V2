@@ -15,7 +15,8 @@ final class Catalog
     public static function options(string $field): ?array {
         return match($field) {
             'programa_id'=>array_column(Database::all('SELECT id,nombre FROM programas_academicos WHERE activo=1 ORDER BY nombre'),'nombre','id'),
-            'tipo_persona'=>['ESTUDIANTE'=>'Estudiante','EGRESADO'=>'Egresado','ADMINISTRATIVO'=>'Administrativo'],
+            'tipo_persona'=>['ESTUDIANTE'=>'Estudiante','EGRESADO'=>'Egresado','ADMINISTRATIVO'=>'Administrativo']
+                + (\Sipe\Services\Profiles::enabled() ? ['DOCENTE'=>'Docente'] : []),
             'categoria_id'=>array_column(Database::all('SELECT id,nombre FROM categorias_recursos WHERE activo=1 ORDER BY nombre'),'nombre','id'),
             'rol_id'=>array_column(Database::all('SELECT id,nombre FROM roles'),'nombre','id'),
             'estado_fisico'=>array_combine(['BUENO','REGULAR','DANADO'],['Bueno','Regular','Dañado']),
